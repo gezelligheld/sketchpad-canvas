@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    /* 参考https://aka.ms/tsconfig */
+    "target": "es5",
+    /* 指定一组描述目标运行时环境的捆绑库声明文件 */
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    /* 跳过所有 .d.ts 文件的类型检查 */
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    /* 当模块没有默认导出时，允许“import y from x” */
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "experimentalDecorators": true,
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": ["src", "typings.d.ts", "demo"]
+}
