@@ -1,6 +1,6 @@
 import BaseDraw from './baseDraw';
+import Eraser from './eraser';
 import History from './history';
-import Object from './object';
 import Stroke from './stroke';
 import { ObjectType } from './types';
 
@@ -69,14 +69,12 @@ class Sketchpad implements SketchpadData {
     }
     this.paint();
     this.render();
-    this.ctx.save();
     const rect = this.canvas.getBoundingClientRect();
-    this.current?.render(
-      this.ctx,
-      e.clientX * this.scale - rect.left,
-      e.clientY * this.scale - rect.top
-    );
-    this.ctx.restore();
+    this.current?.render(this.ctx, {
+      x: e.clientX * this.scale - rect.left,
+      y: e.clientY * this.scale - rect.top,
+      clearCanvas: this.clear,
+    });
   };
 
   private onMouseUp = () => {
@@ -88,6 +86,9 @@ class Sketchpad implements SketchpadData {
       return;
     }
     this.history.add(this.current);
+    if (this.current.type === ObjectType.eraser) {
+      this.render();
+    }
     this.current = null;
   };
 
@@ -98,6 +99,9 @@ class Sketchpad implements SketchpadData {
     switch (this.type) {
       case ObjectType.stroke:
         this.current = new Stroke();
+        break;
+      case ObjectType.eraser:
+        this.current = new Eraser();
         break;
       default:
         this.current = new Stroke();
@@ -111,7 +115,7 @@ class Sketchpad implements SketchpadData {
       return;
     }
     const cur = this.history.remove();
-    this.redoRecord.add(cur);
+    this.redoRecord.add(cur!);
     this.render();
   };
 
@@ -121,7 +125,7 @@ class Sketchpad implements SketchpadData {
       return;
     }
     const cur = this.redoRecord.remove();
-    this.history.add(cur);
+    this.history.add(cur!);
     this.render();
   };
 
@@ -139,7 +143,7 @@ class Sketchpad implements SketchpadData {
   private render = () => {
     this.clear();
     this.history.data.forEach((object) => {
-      object.render(this.ctx);
+      object.render(this.ctx, { clearCanvas: this.clear });
     });
   };
 

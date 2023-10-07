@@ -16,11 +16,27 @@ class Stroke extends BaseDraw {
     super();
   }
 
-  render = (ctx: CanvasRenderingContext2D, x: number, y: number) => {
+  render = (
+    ctx: CanvasRenderingContext2D,
+    options?: { x: number; y: number }
+  ) => {
+    if (
+      (!options?.x && options?.x !== 0) ||
+      (!options?.y && options?.y !== 0)
+    ) {
+      this.renderCore(ctx);
+      return;
+    }
+    const { x, y } = options;
     this.positions.push({ x, y });
+    this.renderCore(ctx);
+  };
+
+  private renderCore = (ctx: CanvasRenderingContext2D) => {
     if (this.positions.length < 2) {
       return;
     }
+    ctx.save();
     ctx.strokeStyle = this.strokeStyle;
     for (let i = 1; i < this.positions.length; i++) {
       ctx.beginPath();
@@ -42,6 +58,7 @@ class Stroke extends BaseDraw {
       );
       ctx.stroke();
     }
+    ctx.restore();
   };
 }
 

@@ -12,3 +12,8 @@ const redo = document.getElementById('redo');
 redo!.onclick = () => {
   sketchpad.redo();
 };
+
+const type = document.getElementById('type');
+type!.onchange = (e: any) => {
+  sketchpad.setType(Number(e.target?.value));
+};

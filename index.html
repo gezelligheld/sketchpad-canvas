@@ -7,7 +7,12 @@
   </head>
   <body>
     <div id="app">
-      <div>类型：<button>stroke</button></div>
+      <div>
+        类型：<select id="type">
+          <option value="0">stroke</option>
+          <option value="1">eraser</option>
+        </select>
+      </div>
       <div>
         操作：<button id="undo">撤销</button><button id="redo">回退</button>
       </div>

@@ -8,6 +8,9 @@ class History<T extends BaseDraw> {
   };
 
   remove = () => {
+    if (!this.data.length) {
+      return;
+    }
     const object = this.data.pop();
     return object as T;
   };

@@ -1,10 +1,10 @@
 import Object from './object';
 import { ObjectType } from './types';
 
-abstract class BaseDraw extends Object {
-  declare type: ObjectType;
+abstract class BaseDraw<T = any> extends Object {
+  declare readonly type: ObjectType;
 
-  declare render: (ctx: CanvasRenderingContext2D, ...rest: number[]) => void;
+  declare render: (ctx: CanvasRenderingContext2D, options?: T) => void;
 }
 
 export default BaseDraw;
