@@ -7,9 +7,11 @@ import { ObjectType } from './types';
 interface SketchpadData {
   ctx: CanvasRenderingContext2D;
   canvas: HTMLCanvasElement;
-  history: History<Object>;
-  current: BaseDraw;
+  history: History<BaseDraw>;
+  redoRecord: History<BaseDraw>;
+  current: BaseDraw | null;
   options: SketchpadOptions | null;
+  type: ObjectType;
 }
 
 interface SketchpadOptions {
@@ -23,10 +25,17 @@ class Sketchpad implements SketchpadData {
 
   declare options: SketchpadOptions | null;
 
+  // 即将绘制的实例类型
+  type = ObjectType.stroke;
+
+  // 历史记录
   history = new History();
 
+  // 回退记录
+  redoRecord = new History();
+
   // 当前正在绘制的实例
-  declare current: BaseDraw;
+  declare current: BaseDraw | null;
 
   private drawing = false;
 
@@ -59,13 +68,13 @@ class Sketchpad implements SketchpadData {
       return;
     }
     this.paint();
-    this.ctx.strokeStyle = '#000';
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.render();
     this.ctx.save();
-    this.current.render(
+    const rect = this.canvas.getBoundingClientRect();
+    this.current?.render(
       this.ctx,
-      e.clientX * this.scale,
-      e.clientY * this.scale
+      e.clientX * this.scale - rect.left,
+      e.clientY * this.scale - rect.top
     );
     this.ctx.restore();
   };
@@ -75,13 +84,18 @@ class Sketchpad implements SketchpadData {
       return;
     }
     this.drawing = false;
+    if (!this.current) {
+      return;
+    }
+    this.history.add(this.current);
+    this.current = null;
   };
 
-  paint = (type?: ObjectType) => {
+  paint = () => {
     if (this.current) {
       return;
     }
-    switch (type) {
+    switch (this.type) {
       case ObjectType.stroke:
         this.current = new Stroke();
         break;
@@ -89,6 +103,44 @@ class Sketchpad implements SketchpadData {
         this.current = new Stroke();
         break;
     }
+  };
+
+  // 撤销
+  undo = () => {
+    if (!this.history.data.length) {
+      return;
+    }
+    const cur = this.history.remove();
+    this.redoRecord.add(cur);
+    this.render();
+  };
+
+  // 回退
+  redo = () => {
+    if (!this.redoRecord.data.length) {
+      return;
+    }
+    const cur = this.redoRecord.remove();
+    this.history.add(cur);
+    this.render();
+  };
+
+  // 清除画布
+  clear = () => {
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+  };
+
+  // 切换模式
+  setType = (type: ObjectType) => {
+    this.type = type;
+  };
+
+  // 渲染
+  private render = () => {
+    this.clear();
+    this.history.data.forEach((object) => {
+      object.render(this.ctx);
+    });
   };
 
   destroy = () => {

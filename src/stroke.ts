@@ -1,4 +1,5 @@
 import BaseDraw from './baseDraw';
+import { ObjectType } from './types';
 
 class Stroke extends BaseDraw {
   top = 0;
@@ -6,6 +7,10 @@ class Stroke extends BaseDraw {
   left = 0;
 
   positions: { x: number; y: number }[] = [];
+
+  strokeStyle = '#000';
+
+  readonly type = ObjectType.stroke;
 
   constructor() {
     super();
@@ -16,6 +21,7 @@ class Stroke extends BaseDraw {
     if (this.positions.length < 2) {
       return;
     }
+    ctx.strokeStyle = this.strokeStyle;
     for (let i = 1; i < this.positions.length; i++) {
       ctx.beginPath();
       const current = this.positions[i];

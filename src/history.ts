@@ -1,6 +1,6 @@
-import Object from './object';
+import BaseDraw from './baseDraw';
 
-class History<T extends Object> {
+class History<T extends BaseDraw> {
   data: T[] = [];
 
   add = (object: T) => {
@@ -9,7 +9,7 @@ class History<T extends Object> {
 
   remove = () => {
     const object = this.data.pop();
-    return object;
+    return object as T;
   };
 }
 
