@@ -1,19 +1,18 @@
-import BaseDraw from './baseDraw';
 import { ObjectType } from './types';
+import { IObjectStyle } from './objectStyle';
+import BaseStyleDraw from './baseStyleDraw';
 
-class Stroke extends BaseDraw {
+class Stroke extends BaseStyleDraw {
   top = 0;
 
   left = 0;
 
   positions: { x: number; y: number }[] = [];
 
-  strokeStyle = '#000';
-
   readonly type = ObjectType.stroke;
 
-  constructor() {
-    super();
+  constructor(options?: Partial<IObjectStyle>) {
+    super(options);
   }
 
   render = (
@@ -37,7 +36,8 @@ class Stroke extends BaseDraw {
       return;
     }
     ctx.save();
-    ctx.strokeStyle = this.strokeStyle;
+    ctx.strokeStyle = this.options.strokeStyle;
+    ctx.lineWidth = this.options.lineWidth;
     for (let i = 1; i < this.positions.length; i++) {
       ctx.beginPath();
       const current = this.positions[i];
@@ -48,7 +48,7 @@ class Stroke extends BaseDraw {
         continue;
       }
       // 起始位置取倒数第二个点和倒数第一个点的中点，终止点取倒数第二个点和倒数第一个点的中点
-      // 拉扯点取倒数第二个点
+      // 控制点取倒数第二个点
       ctx.moveTo((penultimate.x + last.x) / 2, (penultimate.y + last.y) / 2);
       ctx.quadraticCurveTo(
         last.x,

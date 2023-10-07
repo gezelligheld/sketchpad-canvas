@@ -1,5 +1,6 @@
 import BaseDraw from './baseDraw';
 import Eraser from './eraser';
+import ObjectStyle from './objectStyle';
 import History from './history';
 import Stroke from './stroke';
 import { ObjectType } from './types';
@@ -12,6 +13,7 @@ interface SketchpadData {
   current: BaseDraw | null;
   options: SketchpadOptions | null;
   type: ObjectType;
+  style: ObjectStyle;
 }
 
 interface SketchpadOptions {
@@ -33,6 +35,9 @@ class Sketchpad implements SketchpadData {
 
   // 回退记录
   redoRecord = new History();
+
+  // 当前画笔样式
+  style = new ObjectStyle();
 
   // 当前正在绘制的实例
   declare current: BaseDraw | null;
@@ -71,8 +76,8 @@ class Sketchpad implements SketchpadData {
     this.render();
     const rect = this.canvas.getBoundingClientRect();
     this.current?.render(this.ctx, {
-      x: e.clientX * this.scale - rect.left,
-      y: e.clientY * this.scale - rect.top,
+      x: (e.clientX - rect.left) * this.scale,
+      y: (e.clientY - rect.top) * this.scale,
       clearCanvas: this.clear,
     });
   };
@@ -98,13 +103,13 @@ class Sketchpad implements SketchpadData {
     }
     switch (this.type) {
       case ObjectType.stroke:
-        this.current = new Stroke();
+        this.current = new Stroke(this.style.options);
         break;
       case ObjectType.eraser:
         this.current = new Eraser();
         break;
       default:
-        this.current = new Stroke();
+        this.current = new Stroke(this.style.options);
         break;
     }
   };
