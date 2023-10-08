@@ -39,18 +39,20 @@ class Select extends BaseDraw {
     if (!this.start || !this.end) {
       return [];
     }
-    return objects.filter((o) => {
-      if (!o.positions) {
-        return false;
-      }
-      return o.positions.some(
-        ({ x, y }) =>
-          x < Math.max(this.start!.x, this.end!.x) &&
-          x > Math.min(this.start!.x, this.end!.x) &&
-          y < Math.max(this.start!.y, this.end!.y) &&
-          y > Math.min(this.start!.y, this.end!.y)
-      );
-    });
+    return objects
+      .filter(({ type }) => type !== ObjectType.eraser)
+      .filter((o) => {
+        if (!o.positions) {
+          return false;
+        }
+        return o.positions.some(
+          ({ x, y }) =>
+            x < Math.max(this.start!.x, this.end!.x) &&
+            x > Math.min(this.start!.x, this.end!.x) &&
+            y < Math.max(this.start!.y, this.end!.y) &&
+            y > Math.min(this.start!.y, this.end!.y)
+        );
+      });
   };
 }
 

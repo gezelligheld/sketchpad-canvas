@@ -5,7 +5,6 @@ import History from './history';
 import Stroke from './stroke';
 import { ObjectType } from './types';
 import Select from './select';
-import ObjectRect from './objectRect';
 import BaseObjectRect from './baseObjectRect';
 
 interface SketchpadData {
@@ -45,7 +44,11 @@ class Sketchpad implements SketchpadData {
   // 当前正在绘制的实例
   declare current: BaseDraw | null;
 
+  // 是否处于绘制中
   private drawing = false;
+
+  // 所选中的实例
+  private selectedObjects: BaseDraw[] = [];
 
   constructor(canvas: HTMLCanvasElement, options?: SketchpadOptions) {
     const ctx = canvas.getContext('2d');
@@ -85,10 +88,11 @@ class Sketchpad implements SketchpadData {
     });
   };
 
-  private onMouseUp = () => {
+  private onMouseUp = (e: MouseEvent) => {
     if (!this.ctx) {
       return;
     }
+    this.handleSelectTypeWithoutMove(e);
     this.drawing = false;
     if (!this.current) {
       return;
@@ -97,23 +101,63 @@ class Sketchpad implements SketchpadData {
     if (this.current.type !== ObjectType.select) {
       this.history.add(this.current);
     }
+
     // 只在拖动的时候显示，鼠标松开后消失
     if ([ObjectType.eraser, ObjectType.select].includes(this.current.type)) {
       this.render();
     }
+
     // 框选
     if (this.current.type === ObjectType.select) {
       const objects = (this.current as Select).getCheckedObjects(
         this.history.data
       );
       objects.forEach((o) => {
-        console.log(o);
         (o as BaseObjectRect).drawRect(this.ctx);
       });
+      this.selectedObjects = objects;
     }
+
     this.current = null;
   };
 
+  // 没有移动鼠标框选的情况下点选
+  private handleSelectTypeWithoutMove = (e: MouseEvent) => {
+    if (this.type !== ObjectType.select) {
+      return;
+    }
+    const rect = this.canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * this.scale;
+    const y = (e.clientY - rect.top) * this.scale;
+    const target = this.history.data
+      .filter(({ type }) => type !== ObjectType.eraser)
+      // 后画的层级更高，先选中
+      .reverse()
+      .find(({ positions }) => {
+        const left = Math.min(...positions.map(({ x }) => x));
+        const right = Math.max(...positions.map(({ x }) => x));
+        const top = Math.max(...positions.map(({ y }) => y));
+        const bottom = Math.min(...positions.map(({ y }) => y));
+        return (
+          x < Math.max(left, right) &&
+          x > Math.min(left, right) &&
+          y < Math.max(top, bottom) &&
+          y > Math.min(top, bottom)
+        );
+      });
+    // 点击单个实例
+    if (target) {
+      this.render();
+      (target as BaseObjectRect).drawRect(this.ctx);
+      this.selectedObjects = [target];
+    } else {
+      // 点击空白处取消框选
+      this.render();
+      this.selectedObjects = [];
+    }
+  };
+
+  // 生成实例
   paint = () => {
     if (this.current) {
       return;
@@ -162,6 +206,11 @@ class Sketchpad implements SketchpadData {
   // 切换模式
   setType = (type: ObjectType) => {
     this.type = type;
+    // 切换到非框选模式清空选择框
+    if (type !== ObjectType.select && this.selectedObjects.length) {
+      this.render();
+      this.selectedObjects = [];
+    }
   };
 
   // 渲染
@@ -172,6 +221,7 @@ class Sketchpad implements SketchpadData {
     });
   };
 
+  // 销毁
   destroy = () => {
     if (!this.canvas) {
       return;
