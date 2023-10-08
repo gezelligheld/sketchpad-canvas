@@ -1,8 +1,8 @@
 import { ObjectType } from './types';
 import { IObjectStyle } from './objectStyle';
-import BaseStyleDraw from './baseStyleDraw';
+import BaseObjectRect from './baseObjectRect';
 
-class Stroke extends BaseStyleDraw {
+class Stroke extends BaseObjectRect {
   top = 0;
 
   left = 0;

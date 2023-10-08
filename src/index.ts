@@ -4,6 +4,9 @@ import ObjectStyle from './objectStyle';
 import History from './history';
 import Stroke from './stroke';
 import { ObjectType } from './types';
+import Select from './select';
+import ObjectRect from './objectRect';
+import BaseObjectRect from './baseObjectRect';
 
 interface SketchpadData {
   ctx: CanvasRenderingContext2D;
@@ -90,9 +93,23 @@ class Sketchpad implements SketchpadData {
     if (!this.current) {
       return;
     }
-    this.history.add(this.current);
-    if (this.current.type === ObjectType.eraser) {
+    // 不留痕
+    if (this.current.type !== ObjectType.select) {
+      this.history.add(this.current);
+    }
+    // 只在拖动的时候显示，鼠标松开后消失
+    if ([ObjectType.eraser, ObjectType.select].includes(this.current.type)) {
       this.render();
+    }
+    // 框选
+    if (this.current.type === ObjectType.select) {
+      const objects = (this.current as Select).getCheckedObjects(
+        this.history.data
+      );
+      objects.forEach((o) => {
+        console.log(o);
+        (o as BaseObjectRect).drawRect(this.ctx);
+      });
     }
     this.current = null;
   };
@@ -107,6 +124,9 @@ class Sketchpad implements SketchpadData {
         break;
       case ObjectType.eraser:
         this.current = new Eraser();
+        break;
+      case ObjectType.select:
+        this.current = new Select();
         break;
       default:
         this.current = new Stroke(this.style.options);
