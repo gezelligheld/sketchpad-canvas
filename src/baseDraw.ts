@@ -1,12 +1,15 @@
 import Object from './object';
-import { ObjectType } from './types';
 
 abstract class BaseDraw<T = any> extends Object {
-  declare readonly type: ObjectType;
+  declare left: number;
+
+  declare top: number;
 
   declare positions: { x: number; y: number }[];
 
   declare render: (ctx: CanvasRenderingContext2D, options?: T) => void;
+
+  declare move?: (ctx: CanvasRenderingContext2D, x: number, y: number) => void;
 }
 
 export default BaseDraw;

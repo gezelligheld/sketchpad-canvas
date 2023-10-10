@@ -3,11 +3,11 @@ import { IObjectStyle } from './objectStyle';
 import BaseObjectRect from './baseObjectRect';
 
 class Stroke extends BaseObjectRect {
-  top = 0;
-
-  left = 0;
-
   positions: { x: number; y: number }[] = [];
+
+  private currentPoint: { x: number; y: number } | null = null;
+
+  private previousPoint: { x: number; y: number } | null = null;
 
   readonly type = ObjectType.stroke;
 
@@ -59,6 +59,15 @@ class Stroke extends BaseObjectRect {
       ctx.stroke();
     }
     ctx.restore();
+  };
+
+  move = (ctx: CanvasRenderingContext2D, x: number, y: number) => {
+    this.previousPoint = this.currentPoint || { x, y };
+    this.currentPoint = { x, y };
+    this.positions = this.positions.map((p) => ({
+      x: p.x + (this.currentPoint!.x - this.previousPoint!.x),
+      y: p.y + (this.currentPoint!.y - this.previousPoint!.y),
+    }));
   };
 }
 

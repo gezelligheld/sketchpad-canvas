@@ -6,6 +6,7 @@ import Stroke from './stroke';
 import { ObjectType } from './types';
 import Select from './select';
 import BaseObjectRect from './baseObjectRect';
+import getPosition from './utils/getPosition';
 
 interface SketchpadData {
   ctx: CanvasRenderingContext2D;
@@ -50,6 +51,12 @@ class Sketchpad implements SketchpadData {
   // 所选中的实例
   private selectedObjects: BaseDraw[] = [];
 
+  // 是否要拖拽
+  private isDrop = false;
+
+  // 上一次绘制的实例
+  private previous: BaseDraw | null = null;
+
   constructor(canvas: HTMLCanvasElement, options?: SketchpadOptions) {
     const ctx = canvas.getContext('2d');
     if (!ctx) {
@@ -72,18 +79,31 @@ class Sketchpad implements SketchpadData {
       return;
     }
     this.drawing = true;
+    const { x, y } = getPosition(this.canvas, e, this.scale);
+    this.handleStartDrop(x, y);
   };
 
   private onMouseMove = (e: MouseEvent) => {
     if (!this.ctx || !this.drawing) {
       return;
     }
+    const { x, y } = getPosition(this.canvas, e, this.scale);
+    // 拖拽
+    if (this.isDrop) {
+      this.selectedObjects.forEach((o) => {
+        o.move?.(this.ctx, x, y);
+      });
+      this.render();
+      this.selectedObjects.forEach((o) => {
+        (o as BaseObjectRect).drawRect(this.ctx);
+      });
+      return;
+    }
     this.paint();
     this.render();
-    const rect = this.canvas.getBoundingClientRect();
     this.current?.render(this.ctx, {
-      x: (e.clientX - rect.left) * this.scale,
-      y: (e.clientY - rect.top) * this.scale,
+      x,
+      y,
       clearCanvas: this.clear,
     });
   };
@@ -94,6 +114,10 @@ class Sketchpad implements SketchpadData {
     }
     this.handleSelectTypeWithoutMove(e);
     this.drawing = false;
+    // 拖拽的过程没有生成新的实例，这里赋值给上一个实例
+    if (this.isDrop) {
+      this.current = this.previous;
+    }
     if (!this.current) {
       return;
     }
@@ -108,7 +132,7 @@ class Sketchpad implements SketchpadData {
     }
 
     // 框选
-    if (this.current.type === ObjectType.select) {
+    if (this.current.type === ObjectType.select && !this.isDrop) {
       const objects = (this.current as Select).getCheckedObjects(
         this.history.data
       );
@@ -118,7 +142,9 @@ class Sketchpad implements SketchpadData {
       this.selectedObjects = objects;
     }
 
+    this.previous = this.current;
     this.current = null;
+    this.isDrop = false;
   };
 
   // 没有移动鼠标框选的情况下点选
@@ -126,9 +152,7 @@ class Sketchpad implements SketchpadData {
     if (this.type !== ObjectType.select) {
       return;
     }
-    const rect = this.canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * this.scale;
-    const y = (e.clientY - rect.top) * this.scale;
+    const { x, y } = getPosition(this.canvas, e, this.scale);
     const target = this.history.data
       .filter(({ type }) => type !== ObjectType.eraser)
       // 后画的层级更高，先选中
@@ -155,6 +179,29 @@ class Sketchpad implements SketchpadData {
       this.render();
       this.selectedObjects = [];
     }
+  };
+
+  // 开始移动
+  private handleStartDrop = (x: number, y: number) => {
+    if (this.type !== ObjectType.select || !this.selectedObjects.length) {
+      return;
+    }
+    const isDrop = this.selectedObjects
+      // 后选中的层级更高，先操作
+      .reverse()
+      .some(({ positions }) => {
+        const left = Math.min(...positions.map(({ x }) => x));
+        const right = Math.max(...positions.map(({ x }) => x));
+        const top = Math.max(...positions.map(({ y }) => y));
+        const bottom = Math.min(...positions.map(({ y }) => y));
+        return (
+          x < Math.max(left, right) &&
+          x > Math.min(left, right) &&
+          y < Math.max(top, bottom) &&
+          y > Math.min(top, bottom)
+        );
+      });
+    this.isDrop = isDrop;
   };
 
   // 生成实例
