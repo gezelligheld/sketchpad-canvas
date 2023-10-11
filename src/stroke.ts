@@ -61,13 +61,18 @@ class Stroke extends BaseObjectRect {
     ctx.restore();
   };
 
-  move = (ctx: CanvasRenderingContext2D, x: number, y: number) => {
+  move = (x: number, y: number) => {
     this.previousPoint = this.currentPoint || { x, y };
     this.currentPoint = { x, y };
     this.positions = this.positions.map((p) => ({
       x: p.x + (this.currentPoint!.x - this.previousPoint!.x),
       y: p.y + (this.currentPoint!.y - this.previousPoint!.y),
     }));
+  };
+
+  stopMove = () => {
+    this.previousPoint = null;
+    this.currentPoint = null;
   };
 }
 

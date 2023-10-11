@@ -1,6 +1,6 @@
-import BaseDraw from './baseDraw';
+import BaseObjectRect from './baseObjectRect';
 
-class History<T extends BaseDraw> {
+class History<T extends BaseObjectRect> {
   data: T[] = [];
 
   add = (object: T) => {

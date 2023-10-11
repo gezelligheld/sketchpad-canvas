@@ -1,6 +1,7 @@
 import BaseDraw from './baseDraw';
 import { ObjectType } from './types';
 import { STROKE_COLOR, FILL_COLOR } from './constants';
+import BaseObjectRect from './baseObjectRect';
 
 class Select extends BaseDraw {
   start: { x: number; y: number } | null = null;
@@ -35,7 +36,7 @@ class Select extends BaseDraw {
   };
 
   // 框选区域内的实例
-  getCheckedObjects = (objects: BaseDraw[]) => {
+  getCheckedObjects = (objects: BaseObjectRect[]) => {
     if (!this.start || !this.end) {
       return [];
     }
