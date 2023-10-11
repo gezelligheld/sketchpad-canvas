@@ -30,5 +30,5 @@ linewidth!.onchange = (e: any) => {
   options.lineWidth = e.target?.value;
 };
 style!.onclick = () => {
-  sketchpad.style.setStyle(options);
+  sketchpad.setStyle(options);
 };

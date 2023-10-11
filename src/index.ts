@@ -1,6 +1,6 @@
 import BaseDraw from './baseDraw';
 import Eraser from './eraser';
-import ObjectStyle from './objectStyle';
+import ObjectStyle, { IObjectStyle } from './objectStyle';
 import History from './history';
 import Stroke from './stroke';
 import { ObjectType } from './types';
@@ -280,6 +280,15 @@ class Sketchpad implements SketchpadData {
     this.history.data.forEach((object) => {
       object.render(this.ctx, { clearCanvas: this.clear });
     });
+  };
+
+  // 设置样式
+  setStyle = (style: Partial<IObjectStyle>) => {
+    this.style.setStyle(style);
+    this.selectedObjects.forEach((o) => {
+      o.setStyle(style);
+    });
+    this.render();
   };
 
   // 销毁
