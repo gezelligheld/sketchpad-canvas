@@ -3,10 +3,11 @@ import Eraser from './eraser';
 import ObjectStyle, { IObjectStyle } from './objectStyle';
 import History from './history';
 import Stroke from './stroke';
-import { ObjectType } from './types';
+import { EventType, ObjectType } from './types';
 import Select from './select';
 import BaseObjectRect from './baseObjectRect';
 import getPosition from './utils/getPosition';
+import Event from './event';
 
 interface SketchpadData {
   ctx: CanvasRenderingContext2D;
@@ -17,13 +18,14 @@ interface SketchpadData {
   options: SketchpadOptions | null;
   type: ObjectType;
   style: ObjectStyle;
+  selectedObjects: BaseObjectRect[];
 }
 
 interface SketchpadOptions {
   scale?: number;
 }
 
-class Sketchpad implements SketchpadData {
+class Sketchpad extends Event<EventType> implements SketchpadData {
   declare ctx: CanvasRenderingContext2D;
 
   declare canvas: HTMLCanvasElement;
@@ -42,14 +44,14 @@ class Sketchpad implements SketchpadData {
   // 当前画笔样式
   style = new ObjectStyle();
 
+  // 所选中的实例
+  selectedObjects: BaseObjectRect[] = [];
+
   // 当前正在绘制的实例
   declare current: BaseDraw | null;
 
   // 是否处于绘制中
   private drawing = false;
-
-  // 所选中的实例
-  private selectedObjects: BaseObjectRect[] = [];
 
   // 是否要开始拖拽（可能是点选）
   private isDrag = false;
@@ -61,6 +63,7 @@ class Sketchpad implements SketchpadData {
   private previous: BaseDraw | null = null;
 
   constructor(canvas: HTMLCanvasElement, options?: SketchpadOptions) {
+    super();
     const ctx = canvas.getContext('2d');
     if (!ctx) {
       throw new Error('canvas context not support');
@@ -75,6 +78,10 @@ class Sketchpad implements SketchpadData {
     canvas.addEventListener('mousedown', this.onMouseDown);
     canvas.addEventListener('mousemove', this.onMouseMove);
     canvas.addEventListener('mouseup', this.onMouseUp);
+
+    this.on(EventType.historyAdd, (data) => {
+      this.history.batchAdd(data);
+    });
   }
 
   private onMouseDown = (e: MouseEvent) => {
@@ -119,8 +126,10 @@ class Sketchpad implements SketchpadData {
     this.handleSelectTypeWithoutMove(e);
     this.drawing = false;
     // 拖拽的过程没有生成新的实例，这里赋值给上一个实例
-    if (this.isDrag) {
+    if (this.isDraging) {
       this.current = this.previous;
+      // 记录位置
+      // this.emit(EventType.historyAdd, this.selectedObjects);
       this.selectedObjects.forEach((o) => {
         o.stopMove?.();
       });
@@ -130,7 +139,7 @@ class Sketchpad implements SketchpadData {
     }
     // 不留痕
     if (this.current.type !== ObjectType.select) {
-      this.history.add(this.current as BaseObjectRect);
+      this.emit(EventType.historyAdd, [this.current]);
     }
 
     // 只在拖动的时候显示，鼠标松开后消失
@@ -277,7 +286,7 @@ class Sketchpad implements SketchpadData {
   // 渲染
   private render = () => {
     this.clear();
-    this.history.data.forEach((object) => {
+    this.objects.forEach((object) => {
       object.render(this.ctx, { clearCanvas: this.clear });
     });
   };
@@ -299,10 +308,26 @@ class Sketchpad implements SketchpadData {
     this.canvas.removeEventListener('mousedown', this.onMouseDown);
     this.canvas.removeEventListener('mousemove', this.onMouseMove);
     this.canvas.removeEventListener('mouseup', this.onMouseUp);
+    this.offAll(EventType.historyAdd);
   };
 
+  // 比例
   get scale() {
     return this.options?.scale || 1;
+  }
+
+  // 实例集合
+  get objects() {
+    return this.history.data.reduce((res, o) => {
+      const index = res.findIndex(({ id }) => o.id === id);
+      if (index !== -1) {
+        // 靠近栈顶的实例是当前正在展示的，覆盖掉上一个
+        res[index] = o;
+      } else {
+        res.push(o);
+      }
+      return res;
+    }, [] as BaseObjectRect[]);
   }
 }
 

@@ -14,6 +14,10 @@ class History<T extends BaseObjectRect> {
     const object = this.data.pop();
     return object as T;
   };
+
+  batchAdd = (objects: T[]) => {
+    this.data = this.data.concat(objects);
+  };
 }
 
 export default History;

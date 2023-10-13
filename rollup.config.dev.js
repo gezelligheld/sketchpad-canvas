@@ -28,7 +28,7 @@ export default {
       contentBase: './', // 入口 html 文件位置
       historyApiFallback: true, // 设置为 true 返回 index.html 而不是 404
       host: 'localhost', //
-      port: 8000, // 端口号
+      port: 8001, // 端口号
     }),
   ],
 };

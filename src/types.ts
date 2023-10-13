@@ -7,3 +7,8 @@ export enum ObjectType {
   // 框选
   select,
 }
+
+// 事件
+export enum EventType {
+  historyAdd = 'history-add',
+}
