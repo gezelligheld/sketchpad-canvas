@@ -1,6 +1,6 @@
-import { ObjectType } from './types';
-import { IObjectStyle } from './objectStyle';
+import { ObjectType } from './constants';
 import BaseObjectRect from './baseObjectRect';
+import { IObjectStyle } from './types';
 
 class Stroke extends BaseObjectRect {
   positions: { x: number; y: number }[] = [];

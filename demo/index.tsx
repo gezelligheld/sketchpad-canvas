@@ -1,5 +1,5 @@
 import Sketchpad from '@/index';
-import { IObjectStyle } from '@/objectStyle';
+import { IObjectStyle } from '@/types';
 
 const canvas = document.getElementById('demo');
 const sketchpad = new Sketchpad(canvas as HTMLCanvasElement, { scale: 1 });

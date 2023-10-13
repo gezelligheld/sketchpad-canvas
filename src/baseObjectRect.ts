@@ -1,6 +1,6 @@
 import BaseDraw from './baseDraw';
 import ObjectRect from './objectRect';
-import { IObjectStyle } from './objectStyle';
+import { IObjectStyle } from './types';
 
 abstract class BaseObjectRect<T = any> extends BaseDraw<T> {
   rect = new ObjectRect();

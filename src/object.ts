@@ -1,6 +1,6 @@
 import ObjectStyle from './objectStyle';
 import getRandomString from './utils/getRandomString';
-import { ObjectType } from './types';
+import { ObjectType } from './constants';
 
 abstract class Object extends ObjectStyle {
   declare id: string;

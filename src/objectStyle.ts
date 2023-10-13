@@ -1,13 +1,6 @@
-export interface IObjectStyle {
-  strokeStyle: string;
-  lineWidth: number;
-}
+import { IObjectStyle } from './types';
 
-interface ObjectStyleOptions {
-  options: IObjectStyle;
-}
-
-class ObjectStyle implements ObjectStyleOptions {
+class ObjectStyle {
   options = {
     // 轮廓颜色
     strokeStyle: '#000',

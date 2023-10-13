@@ -1,5 +1,5 @@
 import BaseDraw from './baseDraw';
-import { ObjectType } from './types';
+import { ObjectType } from './constants';
 
 class Eraser extends BaseDraw {
   // 橡皮直径

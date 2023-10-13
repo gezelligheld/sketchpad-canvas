@@ -1,5 +1,5 @@
 import BaseDraw from './baseDraw';
-import { IObjectStyle } from './objectStyle';
+import { IObjectStyle } from './types';
 
 abstract class BaseStyleDraw<T = any> extends BaseDraw<T> {
   constructor(options?: Partial<IObjectStyle>) {

@@ -1,6 +1,5 @@
 import BaseDraw from './baseDraw';
-import { ObjectType } from './types';
-import { STROKE_COLOR, FILL_COLOR } from './constants';
+import { STROKE_COLOR, FILL_COLOR, ObjectType } from './constants';
 import BaseObjectRect from './baseObjectRect';
 
 class Select extends BaseDraw {

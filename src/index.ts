@@ -1,13 +1,14 @@
 import BaseDraw from './baseDraw';
 import Eraser from './eraser';
-import ObjectStyle, { IObjectStyle } from './objectStyle';
+import ObjectStyle from './objectStyle';
 import History from './history';
 import Stroke from './stroke';
-import { EventType, ObjectType } from './types';
+import { EventType, ObjectType } from './constants';
 import Select from './select';
 import BaseObjectRect from './baseObjectRect';
 import getPosition from './utils/getPosition';
 import Event from './event';
+import { IObjectStyle } from './types';
 
 interface SketchpadData {
   ctx: CanvasRenderingContext2D;
@@ -128,8 +129,6 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     // 拖拽的过程没有生成新的实例，这里赋值给上一个实例
     if (this.isDraging) {
       this.current = this.previous;
-      // 记录位置
-      // this.emit(EventType.historyAdd, this.selectedObjects);
       this.selectedObjects.forEach((o) => {
         o.stopMove?.();
       });
@@ -209,22 +208,26 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     if (this.type !== ObjectType.select || !this.selectedObjects.length) {
       return;
     }
-    const isDrag = this.selectedObjects
-      // 后选中的层级更高，先操作
-      .reverse()
-      .some(({ positions }) => {
-        const left = Math.min(...positions.map(({ x }) => x));
-        const right = Math.max(...positions.map(({ x }) => x));
-        const top = Math.max(...positions.map(({ y }) => y));
-        const bottom = Math.min(...positions.map(({ y }) => y));
-        return (
-          x < Math.max(left, right) &&
-          x > Math.min(left, right) &&
-          y < Math.max(top, bottom) &&
-          y > Math.min(top, bottom)
-        );
-      });
-    this.isDrag = isDrag;
+    // 后选中的层级更高，先处理
+    const temp = this.selectedObjects.reverse();
+    for (let i = 0; i < temp.length; i++) {
+      const { positions } = temp[i];
+      const left = Math.min(...positions.map(({ x }) => x));
+      const right = Math.max(...positions.map(({ x }) => x));
+      const top = Math.max(...positions.map(({ y }) => y));
+      const bottom = Math.min(...positions.map(({ y }) => y));
+      if (
+        x < Math.max(left, right) &&
+        x > Math.min(left, right) &&
+        y < Math.max(top, bottom) &&
+        y > Math.min(top, bottom)
+      ) {
+        this.isDrag = true;
+        break;
+      } else {
+        this.isDrag = false;
+      }
+    }
   };
 
   // 生成实例

@@ -1,5 +1,5 @@
 import BaseStyleDraw from './baseStyleDraw';
-import { IObjectStyle } from './objectStyle';
+import { IObjectStyle } from './types';
 import { STROKE_COLOR } from './constants';
 
 class ObjectRect extends BaseStyleDraw {
