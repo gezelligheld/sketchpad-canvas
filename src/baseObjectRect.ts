@@ -9,6 +9,8 @@ abstract class BaseObjectRect<T = any> extends BaseDraw<T> {
 
   declare stopMove?: () => void;
 
+  declare resize?: (x: number, y: number) => void;
+
   constructor(options?: Partial<IObjectStyle>) {
     super();
     if (options) {

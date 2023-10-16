@@ -9,6 +9,14 @@ class Stroke extends BaseObjectRect {
 
   private previousPoint: { x: number; y: number } | null = null;
 
+  private originData: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    positions: { x: number; y: number }[];
+  } | null = null;
+
   readonly type = ObjectType.stroke;
 
   constructor(options?: Partial<IObjectStyle>) {
@@ -73,6 +81,33 @@ class Stroke extends BaseObjectRect {
   stopMove = () => {
     this.previousPoint = null;
     this.currentPoint = null;
+  };
+
+  resize = (x: number, y: number) => {
+    // 标明起点和初始的位置信息
+    // if (!this.originData) {
+    //   const left = Math.min(...this.positions.map(({ x }) => x));
+    //   const right = Math.max(...this.positions.map(({ x }) => x));
+    //   const top = Math.min(...this.positions.map(({ y }) => y));
+    //   const bottom = Math.max(...this.positions.map(({ y }) => y));
+    //   this.originData = {
+    //     x,
+    //     y,
+    //     width: Math.abs(left - right),
+    //     height: Math.abs(top - bottom),
+    //     positions: this.positions.map((p) => ({ ...p })),
+    //   };
+    // }
+    // const scaleX =
+    //   (x - this.originData!.x + this.originData!.width) /
+    //   this.originData!.width;
+    // const scaleY =
+    //   (y - this.originData!.y + this.originData!.height) /
+    //   this.originData!.height;
+    // this.positions = this.originData.positions.map((p) => ({
+    //   x: p.x * scaleX,
+    //   y: p.y * scaleY,
+    // }));
   };
 }
 

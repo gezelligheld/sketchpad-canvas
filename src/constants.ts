@@ -18,3 +18,16 @@ export enum ObjectType {
 export enum EventType {
   historyAdd = 'history-add',
 }
+
+// 拖拽类型
+export enum DragType {
+  inner = 'inner',
+  leftTop = 'leftTop',
+  topMid = 'topMid',
+  rightTop = 'rightTop',
+  rightMid = 'rightMid',
+  rightBottom = 'rightBottom',
+  bottomMid = 'bottomMid',
+  leftBottom = 'leftBottom',
+  leftMid = 'leftMid',
+}

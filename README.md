@@ -14,9 +14,12 @@
 - 撤销回退
 - 历史记录
 
-#### 继承关系
+#### 继承组合关系
 
 ```
+Event -> Sketchpad
+         (ObjectStyle、History、Eraser、Stroke、Select、Drag)
+
 ObjectStyle -> Object -> BaseDraw
                             \
                              -> Eraser
@@ -24,6 +27,7 @@ ObjectStyle -> Object -> BaseDraw
                              -> BaseStyleDraw -> ObjectRect
                             \
                              -> BaseObjectRect -> Stroke
+                                (ObjectRect)
                             \
                              -> Select
 ```

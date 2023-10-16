@@ -3,12 +3,14 @@ import Eraser from './eraser';
 import ObjectStyle from './objectStyle';
 import History from './history';
 import Stroke from './stroke';
-import { EventType, ObjectType } from './constants';
+import { EventType, ObjectType, DragType } from './constants';
 import Select from './select';
 import BaseObjectRect from './baseObjectRect';
 import getPosition from './utils/getPosition';
+import isInCircle from './utils/isInCircle';
 import Event from './event';
 import { IObjectStyle } from './types';
+import Drag from './drag';
 
 interface SketchpadData {
   ctx: CanvasRenderingContext2D;
@@ -48,16 +50,16 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
   // 所选中的实例
   selectedObjects: BaseObjectRect[] = [];
 
+  // 拖拽相关逻辑
+  drag = new Drag();
+
   // 当前正在绘制的实例
   declare current: BaseDraw | null;
 
   // 是否处于绘制中
   private drawing = false;
 
-  // 是否要开始拖拽（可能是点选）
-  private isDrag = false;
-
-  // 是否拖拽
+  // 是否拖拽，区分点选
   private isDraging = false;
 
   // 上一次绘制的实例
@@ -73,9 +75,11 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     this.canvas = canvas;
     this.options = options || null;
     // 默认为1倍图
-    const scale = options?.scale || 1;
+    const scale = options?.scale || window.devicePixelRatio;
     this.canvas.width = parseFloat(this.canvas.style.width) * scale;
     this.canvas.height = parseFloat(this.canvas.style.height) * scale;
+    // 根据scale自动缩放画布，防止画布内的元素模糊
+    ctx.scale(scale, scale);
     canvas.addEventListener('mousedown', this.onMouseDown);
     canvas.addEventListener('mousemove', this.onMouseMove);
     canvas.addEventListener('mouseup', this.onMouseUp);
@@ -90,7 +94,7 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
       return;
     }
     this.drawing = true;
-    const { x, y } = getPosition(this.canvas, e, this.scale);
+    const { x, y } = getPosition(this.canvas, e);
     this.handleStartDrop(x, y);
   };
 
@@ -98,9 +102,9 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     if (!this.ctx || !this.drawing) {
       return;
     }
-    const { x, y } = getPosition(this.canvas, e, this.scale);
+    const { x, y } = getPosition(this.canvas, e);
     // 拖拽
-    if (this.isDrag) {
+    if (this.drag.current) {
       this.selectedObjects.forEach((o) => {
         o.move?.(x, y);
       });
@@ -148,7 +152,7 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
 
     // 框选
     if (this.current.type === ObjectType.select) {
-      if (this.isDrag) {
+      if (this.drag.current?.type === DragType.inner) {
         this.selectedObjects.forEach((o) => {
           (o as BaseObjectRect).drawRect(this.ctx);
         });
@@ -165,7 +169,7 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
 
     this.previous = this.current;
     this.current = null;
-    this.isDrag = false;
+    this.drag.init();
     this.isDraging = false;
   };
 
@@ -174,7 +178,7 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     if (this.type !== ObjectType.select || this.isDraging) {
       return;
     }
-    const { x, y } = getPosition(this.canvas, e, this.scale);
+    const { x, y } = getPosition(this.canvas, e);
     const target = this.history.data
       .filter(({ type }) => type !== ObjectType.eraser)
       // 后画的层级更高，先选中
@@ -210,23 +214,74 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     }
     // 后选中的层级更高，先处理
     const temp = this.selectedObjects.reverse();
+    let flag = false;
     for (let i = 0; i < temp.length; i++) {
-      const { positions } = temp[i];
+      const { positions, rect } = temp[i];
       const left = Math.min(...positions.map(({ x }) => x));
       const right = Math.max(...positions.map(({ x }) => x));
-      const top = Math.max(...positions.map(({ y }) => y));
-      const bottom = Math.min(...positions.map(({ y }) => y));
+      const bottom = Math.max(...positions.map(({ y }) => y));
+      const top = Math.min(...positions.map(({ y }) => y));
+      if (isInCircle(x, y, left, top, rect.pointRadius)) {
+        this.drag.setStatus(DragType.leftTop);
+        break;
+      }
+      if (isInCircle(x, y, left, bottom, rect.pointRadius)) {
+        this.drag.setStatus(DragType.leftBottom);
+        break;
+      }
+      if (isInCircle(x, y, right, top, rect.pointRadius)) {
+        this.drag.setStatus(DragType.rightTop);
+        break;
+      }
+      if (isInCircle(x, y, right, bottom, rect.pointRadius)) {
+        this.drag.setStatus(DragType.rightBottom);
+        break;
+      }
+      if (Math.abs(top - bottom) > rect.pointRadius * 2) {
+        // 左中
+        if (
+          isInCircle(x, y, left, bottom + (top - bottom) / 2, rect.pointRadius)
+        ) {
+          this.drag.setStatus(DragType.leftMid);
+          break;
+        }
+        // 右中
+        if (
+          isInCircle(x, y, right, bottom + (top - bottom) / 2, rect.pointRadius)
+        ) {
+          this.drag.setStatus(DragType.rightMid);
+          break;
+        }
+      }
+      if (Math.abs(right - left) > rect.pointRadius * 2) {
+        // 上中
+        if (
+          isInCircle(x, y, left + (right - left) / 2, top, rect.pointRadius)
+        ) {
+          this.drag.setStatus(DragType.topMid);
+          break;
+        }
+        // 下中
+        if (
+          isInCircle(x, y, left + (right - left) / 2, bottom, rect.pointRadius)
+        ) {
+          this.drag.setStatus(DragType.bottomMid);
+          break;
+        }
+      }
       if (
         x < Math.max(left, right) &&
         x > Math.min(left, right) &&
         y < Math.max(top, bottom) &&
         y > Math.min(top, bottom)
       ) {
-        this.isDrag = true;
+        this.drag.setStatus(DragType.inner);
         break;
-      } else {
-        this.isDrag = false;
       }
+      flag = true;
+    }
+    if (flag) {
+      this.drag.init();
     }
   };
 
@@ -289,7 +344,7 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
   // 渲染
   private render = () => {
     this.clear();
-    this.objects.forEach((object) => {
+    this.history.data.forEach((object) => {
       object.render(this.ctx, { clearCanvas: this.clear });
     });
   };
@@ -313,25 +368,6 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     this.canvas.removeEventListener('mouseup', this.onMouseUp);
     this.offAll(EventType.historyAdd);
   };
-
-  // 比例
-  get scale() {
-    return this.options?.scale || 1;
-  }
-
-  // 实例集合
-  get objects() {
-    return this.history.data.reduce((res, o) => {
-      const index = res.findIndex(({ id }) => o.id === id);
-      if (index !== -1) {
-        // 靠近栈顶的实例是当前正在展示的，覆盖掉上一个
-        res[index] = o;
-      } else {
-        res.push(o);
-      }
-      return res;
-    }, [] as BaseObjectRect[]);
-  }
 }
 
 export default Sketchpad;
