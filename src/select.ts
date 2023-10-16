@@ -24,7 +24,7 @@ class Select extends BaseDraw {
     ctx.save();
     ctx.strokeStyle = STROKE_COLOR;
     ctx.fillStyle = FILL_COLOR;
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 2;
     ctx.globalAlpha = 0.5;
     ctx.beginPath();
     ctx.rect(this.start.x, this.start.y, x - this.start.x, y - this.start.y);

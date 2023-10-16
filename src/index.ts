@@ -106,7 +106,7 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     // 拖拽
     if (this.drag.current) {
       this.selectedObjects.forEach((o) => {
-        o.move?.(x, y);
+        o.resize?.(x, y);
       });
       this.render();
       this.selectedObjects.forEach((o) => {
