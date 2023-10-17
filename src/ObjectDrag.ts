@@ -39,7 +39,6 @@ class ObjectDrag {
     // 速率归一化处理，不变时为0，与鼠标移动速度相同时为1
 
     // 线性的对应关系会导致鼠标指针和初始的拖拽点分离，而且会随着鼠标移动位置越大会分离越多，且影响边界条件的判断，交互体验较差，但不会导致实例变形
-    // 这里采用的方式是最靠近拖拽点位置的点速率直接与鼠标指针同步，最远离拖拽点位置的点直接不变
 
     // 标明起点和初始的位置信息
     if (!this.originData) {
@@ -193,6 +192,8 @@ class ObjectDrag {
     });
   };
 
+  // 为保证良好的交互，这里采用的方式是最靠近拖拽点位置的点速率直接与鼠标指针同步
+  // 可能会变更策略，先单独抽出来
   private getScale = (
     type: DragType,
     x: number,
@@ -203,102 +204,42 @@ class ObjectDrag {
     switch (type) {
       case DragType.leftTop:
         return {
-          x:
-            x === this.originData?.left
-              ? 1
-              : x === this.originData?.right
-              ? 0
-              : scaleX,
-          y:
-            y === this.originData?.top
-              ? 1
-              : x === this.originData?.bottom
-              ? 0
-              : scaleY,
+          x: x === this.originData?.left ? 1 : scaleX,
+          y: y === this.originData?.top ? 1 : scaleY,
         };
       case DragType.leftBottom:
         return {
-          x:
-            x === this.originData?.left
-              ? 1
-              : x === this.originData?.right
-              ? 0
-              : scaleX,
-          y:
-            y === this.originData?.bottom
-              ? 1
-              : x === this.originData?.top
-              ? 0
-              : scaleY,
+          x: x === this.originData?.left ? 1 : scaleX,
+          y: y === this.originData?.bottom ? 1 : scaleY,
         };
       case DragType.rightTop:
         return {
-          x:
-            x === this.originData?.right
-              ? 1
-              : x === this.originData?.left
-              ? 0
-              : scaleX,
-          y:
-            y === this.originData?.top
-              ? 1
-              : x === this.originData?.bottom
-              ? 0
-              : scaleY,
+          x: x === this.originData?.right ? 1 : scaleX,
+          y: y === this.originData?.top ? 1 : scaleY,
         };
       case DragType.rightBottom:
         return {
-          x:
-            x === this.originData?.right
-              ? 1
-              : x === this.originData?.left
-              ? 0
-              : scaleX,
-          y:
-            y === this.originData?.bottom
-              ? 1
-              : x === this.originData?.top
-              ? 0
-              : scaleY,
+          x: x === this.originData?.right ? 1 : scaleX,
+          y: y === this.originData?.bottom ? 1 : scaleY,
         };
       case DragType.topMid:
         return {
           x: scaleX,
-          y:
-            y === this.originData?.top
-              ? 1
-              : x === this.originData?.bottom
-              ? 0
-              : scaleY,
+          y: y === this.originData?.top ? 1 : scaleY,
         };
       case DragType.bottomMid:
         return {
           x: scaleX,
-          y:
-            y === this.originData?.bottom
-              ? 1
-              : x === this.originData?.top
-              ? 0
-              : scaleY,
+          y: y === this.originData?.bottom ? 1 : scaleY,
         };
       case DragType.leftMid:
         return {
-          x:
-            x === this.originData?.left
-              ? 1
-              : x === this.originData?.right
-              ? 0
-              : scaleX,
+          x: x === this.originData?.left ? 1 : scaleX,
           y: scaleY,
         };
       case DragType.rightMid:
         return {
-          x:
-            x === this.originData?.right
-              ? 1
-              : x === this.originData?.left
-              ? 0
-              : scaleX,
+          x: x === this.originData?.right ? 1 : scaleX,
           y: scaleY,
         };
       default:
