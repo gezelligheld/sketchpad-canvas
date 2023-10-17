@@ -21,6 +21,7 @@ export enum EventType {
 
 // 拖拽类型
 export enum DragType {
+  init = 'init',
   inner = 'inner',
   leftTop = 'leftTop',
   topMid = 'topMid',

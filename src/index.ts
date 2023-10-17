@@ -59,9 +59,6 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
   // 是否处于绘制中
   private drawing = false;
 
-  // 是否拖拽，区分点选
-  private isDraging = false;
-
   // 上一次绘制的实例
   private previous: BaseDraw | null = null;
 
@@ -104,10 +101,10 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     }
     const { x, y } = getPosition(this.canvas, e);
     // 拖拽
-    if (this.drag.current) {
+    if (this.drag.status !== DragType.init) {
       this.selectedObjects.forEach((o) => {
         let positions: Position[] = [];
-        switch (this.drag.current?.type) {
+        switch (this.drag.status) {
           case DragType.inner:
             positions = o.drag.move(x, y, o.positions);
             break;
@@ -119,7 +116,7 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
           case DragType.rightBottom:
           case DragType.bottomMid:
           case DragType.topMid:
-            positions = o.drag.resize(x, y, o.positions);
+            positions = o.drag.resize(x, y, o.positions, this.drag.status);
             break;
           default:
             break;
@@ -132,7 +129,7 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
       this.selectedObjects.forEach((o) => {
         (o as BaseObjectRect).drawRect(this.ctx);
       });
-      this.isDraging = true;
+      this.drag.setIsDraging(true);
       return;
     }
     this.paint();
@@ -151,7 +148,7 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     this.handleSelectTypeWithoutMove(e);
     this.drawing = false;
     // 拖拽的过程没有生成新的实例，这里赋值给上一个实例
-    if (this.isDraging) {
+    if (this.drag.isDraging) {
       this.current = this.previous;
       this.selectedObjects.forEach((o) => {
         o.drag.clearCache();
@@ -172,7 +169,7 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
 
     // 框选
     if (this.current.type === ObjectType.select) {
-      if (this.drag.current?.type === DragType.inner) {
+      if (this.drag.status !== DragType.init) {
         this.selectedObjects.forEach((o) => {
           (o as BaseObjectRect).drawRect(this.ctx);
         });
@@ -190,12 +187,11 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     this.previous = this.current;
     this.current = null;
     this.drag.init();
-    this.isDraging = false;
   };
 
   // 没有移动鼠标框选的情况下点选
   private handleSelectTypeWithoutMove = (e: MouseEvent) => {
-    if (this.type !== ObjectType.select || this.isDraging) {
+    if (this.type !== ObjectType.select || this.drag.isDraging) {
       return;
     }
     const { x, y } = getPosition(this.canvas, e);
@@ -234,7 +230,6 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     }
     // 后选中的层级更高，先处理
     const temp = this.selectedObjects.reverse();
-    let flag = false;
     for (let i = 0; i < temp.length; i++) {
       const { positions, rect } = temp[i];
       const left = Math.min(...positions.map(({ x }) => x));
@@ -289,18 +284,10 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
           break;
         }
       }
-      if (
-        x < Math.max(left, right) &&
-        x > Math.min(left, right) &&
-        y < Math.max(top, bottom) &&
-        y > Math.min(top, bottom)
-      ) {
+      if (x < right && x > left && y < bottom && y > top) {
         this.drag.setStatus(DragType.inner);
         break;
       }
-      flag = true;
-    }
-    if (flag) {
       this.drag.init();
     }
   };

@@ -43,7 +43,7 @@ class Stroke extends BaseObjectRect {
         ctx.moveTo(current.x, current.y);
         continue;
       }
-      // 起始位置取倒数第二个点和倒数第一个点的中点，终止点取倒数第二个点和倒数第一个点的中点
+      // 起始位置取倒数第二个点和倒数第三个点的中点，终止点取倒数第二个点和倒数第一个点的中点
       // 控制点取倒数第二个点
       ctx.moveTo((penultimate.x + last.x) / 2, (penultimate.y + last.y) / 2);
       ctx.quadraticCurveTo(
