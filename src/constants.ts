@@ -32,3 +32,6 @@ export enum DragType {
   leftBottom = 'leftBottom',
   leftMid = 'leftMid',
 }
+
+// 最小缩放尺寸
+export const MIN_RESIZE_SIZE = 10;

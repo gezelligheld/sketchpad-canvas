@@ -103,7 +103,7 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     // 拖拽
     if (this.drag.status !== DragType.init) {
       this.selectedObjects.forEach((o) => {
-        let positions: Position[] = [];
+        let positions: Position[] | null = null;
         switch (this.drag.status) {
           case DragType.inner:
             positions = o.drag.move(x, y, o.positions);
@@ -121,7 +121,7 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
           default:
             break;
         }
-        if (positions.length) {
+        if (positions) {
           o.setPosition(positions);
         }
       });

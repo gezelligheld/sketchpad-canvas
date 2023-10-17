@@ -2,7 +2,7 @@ import Sketchpad from '@/index';
 import { IObjectStyle } from '@/types';
 
 const canvas = document.getElementById('demo');
-const sketchpad = new Sketchpad(canvas as HTMLCanvasElement, { scale: 2 });
+const sketchpad = new Sketchpad(canvas as HTMLCanvasElement, { scale: 1 });
 
 const undo = document.getElementById('undo');
 undo!.onclick = () => {
