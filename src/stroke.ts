@@ -1,23 +1,9 @@
 import { ObjectType } from './constants';
 import BaseObjectRect from './baseObjectRect';
-import { IObjectStyle } from './types';
+import { IObjectStyle, Position } from './types';
 
 class Stroke extends BaseObjectRect {
-  positions: { x: number; y: number }[] = [];
-
-  private currentPoint: { x: number; y: number } | null = null;
-
-  private previousPoint: { x: number; y: number } | null = null;
-
-  private originData: {
-    x: number;
-    y: number;
-    left: number;
-    right: number;
-    top: number;
-    bottom: number;
-    positions: { x: number; y: number }[];
-  } | null = null;
+  positions: Position[] = [];
 
   readonly type = ObjectType.stroke;
 
@@ -69,52 +55,6 @@ class Stroke extends BaseObjectRect {
       ctx.stroke();
     }
     ctx.restore();
-  };
-
-  move = (x: number, y: number) => {
-    this.previousPoint = this.currentPoint || { x, y };
-    this.currentPoint = { x, y };
-    this.positions = this.positions.map((p) => ({
-      x: p.x + (this.currentPoint!.x - this.previousPoint!.x),
-      y: p.y + (this.currentPoint!.y - this.previousPoint!.y),
-    }));
-  };
-
-  stopMove = () => {
-    this.previousPoint = null;
-    this.currentPoint = null;
-  };
-
-  resize = (x: number, y: number) => {
-    // 分析
-    // 本质上还是移动，只是不同位置移动的偏移量的比例不同
-    // 点集合中，越靠近鼠标位置的点与鼠标移动越同步，越远离鼠标位置的点越接近不变
-    // 速率归一化处理，不变时为0，与鼠标移动速度相同时为1
-
-    // 标明起点和初始的位置信息
-    if (!this.originData) {
-      const left = Math.min(...this.positions.map(({ x }) => x));
-      const right = Math.max(...this.positions.map(({ x }) => x));
-      const top = Math.min(...this.positions.map(({ y }) => y));
-      const bottom = Math.max(...this.positions.map(({ y }) => y));
-      this.originData = {
-        x,
-        y,
-        left,
-        top,
-        right,
-        bottom: bottom,
-        positions: this.positions.map((p) => ({ ...p })),
-      };
-    }
-    this.positions = this.originData.positions.map((p) => {
-      const scaleX = (this.originData!.right - p.x) / p.x;
-      const scaleY = (this.originData!.bottom - p.y) / p.y;
-      return {
-        x: p.x + (x - this.originData!.x) * scaleX,
-        y: p.y + (y - this.originData!.y) * scaleY,
-      };
-    });
   };
 }
 

@@ -9,7 +9,7 @@ import BaseObjectRect from './baseObjectRect';
 import getPosition from './utils/getPosition';
 import isInCircle from './utils/isInCircle';
 import Event from './event';
-import { IObjectStyle } from './types';
+import { IObjectStyle, Position } from './types';
 import Drag from './drag';
 
 interface SketchpadData {
@@ -106,7 +106,27 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     // 拖拽
     if (this.drag.current) {
       this.selectedObjects.forEach((o) => {
-        o.resize?.(x, y);
+        let positions: Position[] = [];
+        switch (this.drag.current?.type) {
+          case DragType.inner:
+            positions = o.drag.move(x, y, o.positions);
+            break;
+          case DragType.leftTop:
+          case DragType.leftMid:
+          case DragType.leftBottom:
+          case DragType.rightTop:
+          case DragType.rightMid:
+          case DragType.rightBottom:
+          case DragType.bottomMid:
+          case DragType.topMid:
+            positions = o.drag.resize(x, y, o.positions);
+            break;
+          default:
+            break;
+        }
+        if (positions.length) {
+          o.setPosition(positions);
+        }
       });
       this.render();
       this.selectedObjects.forEach((o) => {
@@ -134,7 +154,7 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     if (this.isDraging) {
       this.current = this.previous;
       this.selectedObjects.forEach((o) => {
-        o.stopMove?.();
+        o.drag.clearCache();
       });
     }
     if (!this.current) {

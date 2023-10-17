@@ -27,7 +27,7 @@ ObjectStyle -> Object -> BaseDraw
                              -> BaseStyleDraw -> ObjectRect
                             \
                              -> BaseObjectRect -> Stroke
-                                (ObjectRect)
+                                (ObjectRect、ObjectDrag)
                             \
                              -> Select
 ```

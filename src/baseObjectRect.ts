@@ -1,15 +1,12 @@
+import ObjectDrag from './ObjectDrag';
 import BaseDraw from './baseDraw';
 import ObjectRect from './objectRect';
-import { IObjectStyle } from './types';
+import { IObjectStyle, Position } from './types';
 
 abstract class BaseObjectRect<T = any> extends BaseDraw<T> {
   rect = new ObjectRect();
 
-  declare move?: (x: number, y: number) => void;
-
-  declare stopMove?: () => void;
-
-  declare resize?: (x: number, y: number) => void;
+  drag = new ObjectDrag();
 
   constructor(options?: Partial<IObjectStyle>) {
     super();
@@ -20,6 +17,10 @@ abstract class BaseObjectRect<T = any> extends BaseDraw<T> {
 
   drawRect = (ctx: CanvasRenderingContext2D) => {
     this.rect.drawRect(ctx, this.positions);
+  };
+
+  setPosition = (positions: Position[]) => {
+    this.positions = positions;
   };
 }
 
