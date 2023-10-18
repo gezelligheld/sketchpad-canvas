@@ -37,7 +37,6 @@ class ObjectDrag {
     // 本质上还是移动，只是不同位置移动的偏移量的比例不同
     // 点集合中，越靠近鼠标位置的点与鼠标移动越同步，越远离鼠标位置的点越接近不变
     // 速率归一化处理，不变时为0，与鼠标移动速度相同时为1
-
     // 线性的对应关系会导致鼠标指针和初始的拖拽点分离，而且会随着鼠标移动位置越大会分离越多，且影响边界条件的判断，交互体验较差，但不会导致实例变形
 
     // 标明起点和初始的位置信息
@@ -254,6 +253,41 @@ class ObjectDrag {
     this.originData = null;
     this.previousPoint = null;
     this.currentPoint = null;
+  };
+
+  // 旋转
+  rotate = (x: number, y: number, positions: Position[]) => {
+    // 分析
+    // 旋转中心为几何中心，需要先计算出旋转角度，点集合中随着该角度旋转
+    if (!this.originData) {
+      const left = Math.min(...positions.map(({ x }) => x));
+      const right = Math.max(...positions.map(({ x }) => x));
+      const top = Math.min(...positions.map(({ y }) => y));
+      const bottom = Math.max(...positions.map(({ y }) => y));
+      this.originData = {
+        x,
+        y,
+        left,
+        top,
+        right,
+        bottom: bottom,
+        positions: positions.map((p) => ({ ...p })),
+      };
+    }
+    // const centerX = (this.originData.left + this.originData.right) / 2;
+    // const centerY = (this.originData.top + this.originData.bottom) / 2;
+    // const initDeg = Math.atan2(
+    //   this.originData.y - centerY,
+    //   this.originData.x - centerX
+    // );
+    // const deg = Math.atan2(y - centerY, x - centerX);
+    // return this.originData.positions.map((p) => {
+    //   return {
+    //     x: p.x * Math.cos(deg - initDeg),
+    //     y: p.y * Math.sin(deg - initDeg),
+    //   };
+    // });
+    return this.originData.positions;
   };
 }
 

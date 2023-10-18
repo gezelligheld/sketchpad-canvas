@@ -3,7 +3,11 @@ import { IObjectStyle } from './types';
 import { STROKE_COLOR } from './constants';
 
 class ObjectRect extends BaseStyleDraw {
+  // 点直径
   pointRadius = 5;
+
+  // 旋转触发点距离
+  pointDistance = 16;
 
   constructor(options?: Partial<IObjectStyle>) {
     super(options);
@@ -24,14 +28,15 @@ class ObjectRect extends BaseStyleDraw {
     ctx.save();
     const left = Math.min(...positions.map(({ x }) => x));
     const right = Math.max(...positions.map(({ x }) => x));
-    const top = Math.max(...positions.map(({ y }) => y));
-    const bottom = Math.min(...positions.map(({ y }) => y));
+    const top = Math.min(...positions.map(({ y }) => y));
+    const bottom = Math.max(...positions.map(({ y }) => y));
     ctx.setLineDash([10, 10]);
     ctx.strokeStyle = this.options.strokeStyle;
     ctx.beginPath();
     ctx.rect(left, top, right - left, bottom - top);
     ctx.stroke();
     ctx.restore();
+    this.drawRotatePoint(ctx, { left, right, top, bottom });
     this.drawRectPoint(ctx, { left, right, top, bottom });
   };
 
@@ -71,6 +76,30 @@ class ObjectRect extends BaseStyleDraw {
     ctx.arc(x, y, this.pointRadius, 0, Math.PI * 2);
     ctx.stroke();
     ctx.fill();
+  };
+
+  // 旋转触发点
+  private drawRotatePoint = (
+    ctx: CanvasRenderingContext2D,
+    position: {
+      left: number;
+      right: number;
+      top: number;
+      bottom: number;
+    }
+  ) => {
+    ctx.save();
+    const { left, right, top } = position;
+    ctx.strokeStyle = this.options.strokeStyle;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.moveTo(left + (right - left) / 2, top);
+    ctx.lineTo(left + (right - left) / 2, top - this.pointDistance);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.strokeStyle = '#000';
+    this.drawPoint(ctx, left + (right - left) / 2, top - this.pointDistance);
+    ctx.restore();
   };
 }
 

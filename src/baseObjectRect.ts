@@ -1,4 +1,4 @@
-import ObjectDrag from './ObjectDrag';
+import ObjectDrag from './objectDrag';
 import BaseDraw from './baseDraw';
 import ObjectRect from './objectRect';
 import { IObjectStyle, Position } from './types';

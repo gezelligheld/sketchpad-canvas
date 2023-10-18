@@ -113,12 +113,17 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
         const target = this.selectedObjects.find(
           (t) => t.id === this.drag.targetId
         );
-        const positions = target?.drag.resize(
-          x,
-          y,
-          target.positions,
-          this.drag.status
-        );
+        let positions = null;
+        if (this.drag.status === DragType.rotate) {
+          positions = target?.drag.rotate(x, y, target.positions);
+        } else {
+          positions = target?.drag.resize(
+            x,
+            y,
+            target.positions,
+            this.drag.status
+          );
+        }
         positions && target?.setPosition(positions);
       }
       this.render();
@@ -232,18 +237,22 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
       const right = Math.max(...positions.map(({ x }) => x));
       const bottom = Math.max(...positions.map(({ y }) => y));
       const top = Math.min(...positions.map(({ y }) => y));
+      // 左上
       if (isInCircle(x, y, left, top, rect.pointRadius)) {
         this.drag.setStatus(DragType.leftTop, id);
         break;
       }
+      // 左下
       if (isInCircle(x, y, left, bottom, rect.pointRadius)) {
         this.drag.setStatus(DragType.leftBottom, id);
         break;
       }
+      // 右上
       if (isInCircle(x, y, right, top, rect.pointRadius)) {
         this.drag.setStatus(DragType.rightTop, id);
         break;
       }
+      // 右下
       if (isInCircle(x, y, right, bottom, rect.pointRadius)) {
         this.drag.setStatus(DragType.rightBottom, id);
         break;
@@ -279,6 +288,19 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
           this.drag.setStatus(DragType.bottomMid, id);
           break;
         }
+      }
+      // 旋转点
+      if (
+        isInCircle(
+          x,
+          y,
+          left + (right - left) / 2,
+          top - rect.pointDistance,
+          rect.pointRadius
+        )
+      ) {
+        this.drag.setStatus(DragType.rotate, id);
+        break;
       }
       if (x < right && x > left && y < bottom && y > top) {
         this.drag.setStatus(DragType.inner, id);

@@ -31,6 +31,7 @@ export enum DragType {
   bottomMid = 'bottomMid',
   leftBottom = 'leftBottom',
   leftMid = 'leftMid',
+  rotate = 'rotate',
 }
 
 // 最小缩放尺寸
