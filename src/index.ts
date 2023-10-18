@@ -102,29 +102,25 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     const { x, y } = getPosition(this.canvas, e);
     // 拖拽
     if (this.drag.status !== DragType.init) {
-      this.selectedObjects.forEach((o) => {
-        let positions: Position[] | null = null;
-        switch (this.drag.status) {
-          case DragType.inner:
-            positions = o.drag.move(x, y, o.positions);
-            break;
-          case DragType.leftTop:
-          case DragType.leftMid:
-          case DragType.leftBottom:
-          case DragType.rightTop:
-          case DragType.rightMid:
-          case DragType.rightBottom:
-          case DragType.bottomMid:
-          case DragType.topMid:
-            positions = o.drag.resize(x, y, o.positions, this.drag.status);
-            break;
-          default:
-            break;
-        }
-        if (positions) {
-          o.setPosition(positions);
-        }
-      });
+      // 移动是批量操作
+      if (this.drag.status === DragType.inner) {
+        this.selectedObjects.forEach((o) => {
+          const positions = o.drag.move(x, y, o.positions);
+          positions && o.setPosition(positions);
+        });
+      } else {
+        // 其他只操作单个
+        const target = this.selectedObjects.find(
+          (t) => t.id === this.drag.targetId
+        );
+        const positions = target?.drag.resize(
+          x,
+          y,
+          target.positions,
+          this.drag.status
+        );
+        positions && target?.setPosition(positions);
+      }
       this.render();
       this.selectedObjects.forEach((o) => {
         (o as BaseObjectRect).drawRect(this.ctx);
@@ -231,25 +227,25 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     // 后选中的层级更高，先处理
     const temp = this.selectedObjects.reverse();
     for (let i = 0; i < temp.length; i++) {
-      const { positions, rect } = temp[i];
+      const { positions, rect, id } = temp[i];
       const left = Math.min(...positions.map(({ x }) => x));
       const right = Math.max(...positions.map(({ x }) => x));
       const bottom = Math.max(...positions.map(({ y }) => y));
       const top = Math.min(...positions.map(({ y }) => y));
       if (isInCircle(x, y, left, top, rect.pointRadius)) {
-        this.drag.setStatus(DragType.leftTop);
+        this.drag.setStatus(DragType.leftTop, id);
         break;
       }
       if (isInCircle(x, y, left, bottom, rect.pointRadius)) {
-        this.drag.setStatus(DragType.leftBottom);
+        this.drag.setStatus(DragType.leftBottom, id);
         break;
       }
       if (isInCircle(x, y, right, top, rect.pointRadius)) {
-        this.drag.setStatus(DragType.rightTop);
+        this.drag.setStatus(DragType.rightTop, id);
         break;
       }
       if (isInCircle(x, y, right, bottom, rect.pointRadius)) {
-        this.drag.setStatus(DragType.rightBottom);
+        this.drag.setStatus(DragType.rightBottom, id);
         break;
       }
       if (Math.abs(top - bottom) > rect.pointRadius * 2) {
@@ -257,14 +253,14 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
         if (
           isInCircle(x, y, left, bottom + (top - bottom) / 2, rect.pointRadius)
         ) {
-          this.drag.setStatus(DragType.leftMid);
+          this.drag.setStatus(DragType.leftMid, id);
           break;
         }
         // 右中
         if (
           isInCircle(x, y, right, bottom + (top - bottom) / 2, rect.pointRadius)
         ) {
-          this.drag.setStatus(DragType.rightMid);
+          this.drag.setStatus(DragType.rightMid, id);
           break;
         }
       }
@@ -273,19 +269,19 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
         if (
           isInCircle(x, y, left + (right - left) / 2, top, rect.pointRadius)
         ) {
-          this.drag.setStatus(DragType.topMid);
+          this.drag.setStatus(DragType.topMid, id);
           break;
         }
         // 下中
         if (
           isInCircle(x, y, left + (right - left) / 2, bottom, rect.pointRadius)
         ) {
-          this.drag.setStatus(DragType.bottomMid);
+          this.drag.setStatus(DragType.bottomMid, id);
           break;
         }
       }
       if (x < right && x > left && y < bottom && y > top) {
-        this.drag.setStatus(DragType.inner);
+        this.drag.setStatus(DragType.inner, id);
         break;
       }
       this.drag.init();

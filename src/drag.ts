@@ -6,8 +6,12 @@ class Drag {
   // 是否拖拽，区分点选
   isDraging = false;
 
-  setStatus = (status: Exclude<DragType, 'init'>) => {
+  // 当前要拖拽的实例
+  targetId = '';
+
+  setStatus = (status: Exclude<DragType, 'init'>, id: string) => {
     this.status = status;
+    this.targetId = id;
   };
 
   setIsDraging = (isDraging: boolean) => {
