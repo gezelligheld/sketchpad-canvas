@@ -102,35 +102,47 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     const { x, y } = getPosition(this.canvas, e);
     // 拖拽
     if (this.drag.status !== DragType.init) {
-      // 移动是批量操作
-      if (this.drag.status === DragType.inner) {
-        this.selectedObjects.forEach((o) => {
-          const positions = o.drag.move(x, y, o.positions);
-          positions && o.setPosition(positions);
-        });
-      } else {
-        // 其他只操作单个
-        const target = this.selectedObjects.find(
-          (t) => t.id === this.drag.targetId
-        );
-        let positions = null;
-        if (this.drag.status === DragType.rotate) {
-          positions = target?.drag.rotate(x, y, target.positions);
-        } else {
-          positions = target?.drag.resize(
+      this.drag.setIsDraging(true);
+
+      switch (this.drag.status) {
+        case DragType.inner:
+          this.selectedObjects.forEach((o) => {
+            const positions = o.drag.move(x, y, o.positions);
+            positions && o.setPosition(positions);
+          });
+          this.render();
+          this.drawRect();
+          break;
+        case DragType.rotate: {
+          const target = this.selectedObjects.find(
+            (t) => t.id === this.drag.targetId
+          ) as BaseObjectRect<any>;
+          const { positions, centerX, centerY, offsetRadian } =
+            target.drag.rotate(this.ctx, x, y, target.positions);
+          positions && target?.setPosition(positions);
+          this.render();
+          // 复原偏移
+          target?.drag.originData?.positions &&
+            target?.setPosition(target?.drag.originData?.positions);
+          this.drawRect({ centerX, centerY, offsetRadian });
+          break;
+        }
+        default: {
+          const target = this.selectedObjects.find(
+            (t) => t.id === this.drag.targetId
+          );
+          const positions = target?.drag.resize(
             x,
             y,
             target.positions,
             this.drag.status
           );
+          positions && target?.setPosition(positions);
+          this.render();
+          this.drawRect();
+          break;
         }
-        positions && target?.setPosition(positions);
       }
-      this.render();
-      this.selectedObjects.forEach((o) => {
-        (o as BaseObjectRect).drawRect(this.ctx);
-      });
-      this.drag.setIsDraging(true);
       return;
     }
     this.paint();
@@ -171,9 +183,7 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     // 框选
     if (this.current.type === ObjectType.select) {
       if (this.drag.status !== DragType.init) {
-        this.selectedObjects.forEach((o) => {
-          (o as BaseObjectRect).drawRect(this.ctx);
-        });
+        this.drawRect();
       } else {
         const objects = (this.current as Select).getCheckedObjects(
           this.history.data
@@ -230,6 +240,7 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
       return;
     }
     // 后选中的层级更高，先处理
+    // todo 旋转后相对位置可能会变，需要提前记录
     const temp = this.selectedObjects.reverse();
     for (let i = 0; i < temp.length; i++) {
       const { positions, rect, id } = temp[i];
@@ -366,10 +377,42 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     }
   };
 
+  private drawRect = (options?: {
+    centerX: number;
+    centerY: number;
+    offsetRadian: number;
+  }) => {
+    this.selectedObjects.forEach((o) => {
+      if (this.drag.status === DragType.rotate && options) {
+        // todo
+        this.ctx.translate(options.centerX, options.centerY);
+        this.ctx.rotate(options.offsetRadian);
+        (o as BaseObjectRect).drawRect(this.ctx);
+        this.ctx.resetTransform();
+      } else {
+        (o as BaseObjectRect).drawRect(this.ctx);
+      }
+    });
+  };
+
   // 渲染
   private render = () => {
     this.clear();
+    const rotateTarget = this.history.data.find(
+      ({ id }) => id === this.drag.targetId
+    );
+    // 处于旋转状态下时需要先渲染旋转的实例，然后重置变换矩阵，避免影响其他实例
+    if (rotateTarget && this.drag.status === DragType.rotate) {
+      rotateTarget.render(this.ctx, { clearCanvas: this.clear });
+      this.ctx.resetTransform();
+    }
     this.history.data.forEach((object) => {
+      if (
+        this.drag.status === DragType.rotate &&
+        object.id === this.drag.targetId
+      ) {
+        return;
+      }
       object.render(this.ctx, { clearCanvas: this.clear });
     });
   };

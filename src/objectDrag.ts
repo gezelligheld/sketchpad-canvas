@@ -2,7 +2,7 @@ import { DragType, MIN_RESIZE_SIZE } from './constants';
 import { Position } from './types';
 
 class ObjectDrag {
-  private originData: {
+  originData: {
     x: number;
     y: number;
     left: number;
@@ -51,7 +51,7 @@ class ObjectDrag {
         left,
         top,
         right,
-        bottom: bottom,
+        bottom,
         positions: positions.map((p) => ({ ...p })),
       };
     }
@@ -256,9 +256,12 @@ class ObjectDrag {
   };
 
   // 旋转
-  rotate = (x: number, y: number, positions: Position[]) => {
-    // 分析
-    // 旋转中心为几何中心，需要先计算出旋转角度，点集合中随着该角度旋转
+  rotate = (
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    positions: Position[]
+  ) => {
     if (!this.originData) {
       const left = Math.min(...positions.map(({ x }) => x));
       const right = Math.max(...positions.map(({ x }) => x));
@@ -270,24 +273,46 @@ class ObjectDrag {
         left,
         top,
         right,
-        bottom: bottom,
+        bottom,
         positions: positions.map((p) => ({ ...p })),
       };
     }
-    // const centerX = (this.originData.left + this.originData.right) / 2;
-    // const centerY = (this.originData.top + this.originData.bottom) / 2;
-    // const initDeg = Math.atan2(
-    //   this.originData.y - centerY,
-    //   this.originData.x - centerX
-    // );
-    // const deg = Math.atan2(y - centerY, x - centerX);
-    // return this.originData.positions.map((p) => {
-    //   return {
-    //     x: p.x * Math.cos(deg - initDeg),
-    //     y: p.y * Math.sin(deg - initDeg),
-    //   };
-    // });
-    return this.originData.positions;
+    // 几何中心
+    const centerX = (this.originData.left + this.originData.right) / 2;
+    const centerY = (this.originData.top + this.originData.bottom) / 2;
+    // 初始弧度
+    const initRadian = Math.atan2(
+      this.originData.y - centerY,
+      this.originData.x - centerX
+    );
+    // 当前弧度
+    const radian = Math.atan2(y - centerY, x - centerX);
+    const offsetRadian = radian - initRadian;
+    // 只清空旋转区域
+    const maxClearRadius =
+      Math.max(
+        this.originData.right - this.originData.left,
+        this.originData.bottom - this.originData.top
+      ) / Math.cos(45 * (Math.PI / 180));
+    ctx.clearRect(
+      centerX - maxClearRadius / 2,
+      centerY - maxClearRadius / 2,
+      maxClearRadius,
+      maxClearRadius
+    );
+    // 修改旋转中心为几何中心，默认画布左上角
+    ctx.translate(centerX, centerY);
+    ctx.rotate(offsetRadian);
+    // 所有点相应地平移
+    return {
+      positions: this.originData.positions.map((p) => ({
+        x: p.x - centerX,
+        y: p.y - centerY,
+      })),
+      centerX,
+      centerY,
+      offsetRadian,
+    };
   };
 }
 
