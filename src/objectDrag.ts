@@ -288,31 +288,14 @@ class ObjectDrag {
     // 当前弧度
     const radian = Math.atan2(y - centerY, x - centerX);
     const offsetRadian = radian - initRadian;
-    // 只清空旋转区域
-    const maxClearRadius =
-      Math.max(
-        this.originData.right - this.originData.left,
-        this.originData.bottom - this.originData.top
-      ) / Math.cos(45 * (Math.PI / 180));
-    ctx.clearRect(
-      centerX - maxClearRadius / 2,
-      centerY - maxClearRadius / 2,
-      maxClearRadius,
-      maxClearRadius
-    );
     // 修改旋转中心为几何中心，默认画布左上角
     ctx.translate(centerX, centerY);
     ctx.rotate(offsetRadian);
     // 所有点相应地平移
-    return {
-      positions: this.originData.positions.map((p) => ({
-        x: p.x - centerX,
-        y: p.y - centerY,
-      })),
-      centerX,
-      centerY,
-      offsetRadian,
-    };
+    return this.originData.positions.map((p) => ({
+      x: p.x - centerX,
+      y: p.y - centerY,
+    }));
   };
 }
 

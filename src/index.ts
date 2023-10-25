@@ -117,14 +117,24 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
           const target = this.selectedObjects.find(
             (t) => t.id === this.drag.targetId
           ) as BaseObjectRect<any>;
-          const { positions, centerX, centerY, offsetRadian } =
-            target.drag.rotate(this.ctx, x, y, target.positions);
+          this.clear();
+          const positions = target.drag.rotate(
+            this.ctx,
+            x,
+            y,
+            target.positions
+          );
+          // 添加偏移，弥补旋转中心变化到几何中心的偏移
           positions && target?.setPosition(positions);
-          this.render();
+          target.render(this.ctx, { clearCanvas: this.clear });
+          target.drawRect(this.ctx);
+          // 复原变换矩阵
+          this.ctx.resetTransform();
           // 复原偏移
           target?.drag.originData?.positions &&
             target?.setPosition(target?.drag.originData?.positions);
-          this.drawRect({ centerX, centerY, offsetRadian });
+          this.render({ notClear: true });
+          this.drawRect();
           break;
         }
         default: {
@@ -377,34 +387,19 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     }
   };
 
-  private drawRect = (options?: {
-    centerX: number;
-    centerY: number;
-    offsetRadian: number;
-  }) => {
+  private drawRect = () => {
     this.selectedObjects.forEach((o) => {
-      if (this.drag.status === DragType.rotate && options) {
-        // todo
-        this.ctx.translate(options.centerX, options.centerY);
-        this.ctx.rotate(options.offsetRadian);
-        (o as BaseObjectRect).drawRect(this.ctx);
-        this.ctx.resetTransform();
-      } else {
-        (o as BaseObjectRect).drawRect(this.ctx);
+      if (this.drag.status === DragType.rotate && o.id === this.drag.targetId) {
+        return;
       }
+      (o as BaseObjectRect).drawRect(this.ctx);
     });
   };
 
   // 渲染
-  private render = () => {
-    this.clear();
-    const rotateTarget = this.history.data.find(
-      ({ id }) => id === this.drag.targetId
-    );
-    // 处于旋转状态下时需要先渲染旋转的实例，然后重置变换矩阵，避免影响其他实例
-    if (rotateTarget && this.drag.status === DragType.rotate) {
-      rotateTarget.render(this.ctx, { clearCanvas: this.clear });
-      this.ctx.resetTransform();
+  private render = (options?: { notClear: boolean }) => {
+    if (!options?.notClear) {
+      this.clear();
     }
     this.history.data.forEach((object) => {
       if (
