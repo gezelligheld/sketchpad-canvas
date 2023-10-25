@@ -8,6 +8,9 @@ abstract class BaseObjectRect<T = any> extends BaseDraw<T> {
 
   drag = new ObjectDrag();
 
+  // 是否选中
+  selected = false;
+
   constructor(options?: Partial<IObjectStyle>) {
     super();
     if (options) {
@@ -21,6 +24,10 @@ abstract class BaseObjectRect<T = any> extends BaseDraw<T> {
 
   setPosition = (positions: Position[]) => {
     this.positions = positions;
+  };
+
+  select = (selected: boolean) => {
+    this.selected = selected;
   };
 }
 

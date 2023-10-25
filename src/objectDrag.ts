@@ -16,6 +16,9 @@ class ObjectDrag {
 
   private previousPoint: Position | null = null;
 
+  // 当前变换矩阵
+  matrix: DOMMatrix | null = null;
+
   // 移动
   move = (x: number, y: number, positions: Position[]): Position[] => {
     this.previousPoint = this.currentPoint || { x, y };
@@ -250,7 +253,7 @@ class ObjectDrag {
   };
 
   clearCache = () => {
-    this.originData = null;
+    // this.originData = null;
     this.previousPoint = null;
     this.currentPoint = null;
   };
@@ -291,12 +294,22 @@ class ObjectDrag {
     // 修改旋转中心为几何中心，默认画布左上角
     ctx.translate(centerX, centerY);
     ctx.rotate(offsetRadian);
-    // 所有点相应地平移
+    this.matrix = ctx.getTransform();
+  };
+
+  // 坐标原点变化时的偏移
+  get offsetPositions() {
+    if (!this.originData) {
+      return null;
+    }
+    // 几何中心
+    const centerX = (this.originData.left + this.originData.right) / 2;
+    const centerY = (this.originData.top + this.originData.bottom) / 2;
     return this.originData.positions.map((p) => ({
       x: p.x - centerX,
       y: p.y - centerY,
     }));
-  };
+  }
 }
 
 export default ObjectDrag;

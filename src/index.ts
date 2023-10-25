@@ -21,7 +21,6 @@ interface SketchpadData {
   options: SketchpadOptions | null;
   type: ObjectType;
   style: ObjectStyle;
-  selectedObjects: BaseObjectRect[];
 }
 
 interface SketchpadOptions {
@@ -46,9 +45,6 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
 
   // 当前画笔样式
   style = new ObjectStyle();
-
-  // 所选中的实例
-  selectedObjects: BaseObjectRect[] = [];
 
   // 拖拽相关逻辑
   drag = new Drag();
@@ -111,30 +107,14 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
             positions && o.setPosition(positions);
           });
           this.render();
-          this.drawRect();
           break;
         case DragType.rotate: {
           const target = this.selectedObjects.find(
             (t) => t.id === this.drag.targetId
           ) as BaseObjectRect<any>;
           this.clear();
-          const positions = target.drag.rotate(
-            this.ctx,
-            x,
-            y,
-            target.positions
-          );
-          // 添加偏移，弥补旋转中心变化到几何中心的偏移
-          positions && target?.setPosition(positions);
-          target.render(this.ctx, { clearCanvas: this.clear });
-          target.drawRect(this.ctx);
-          // 复原变换矩阵
-          this.ctx.resetTransform();
-          // 复原偏移
-          target?.drag.originData?.positions &&
-            target?.setPosition(target?.drag.originData?.positions);
+          target.drag.rotate(this.ctx, x, y, target.positions);
           this.render({ notClear: true });
-          this.drawRect();
           break;
         }
         default: {
@@ -149,7 +129,6 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
           );
           positions && target?.setPosition(positions);
           this.render();
-          this.drawRect();
           break;
         }
       }
@@ -185,24 +164,24 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
       this.emit(EventType.historyAdd, [this.current]);
     }
 
-    // 只在拖动的时候显示，鼠标松开后消失
-    if ([ObjectType.eraser, ObjectType.select].includes(this.current.type)) {
-      this.render();
-    }
-
     // 框选
     if (this.current.type === ObjectType.select) {
       if (this.drag.status !== DragType.init) {
-        this.drawRect();
+        this.selectAll(true);
       } else {
         const objects = (this.current as Select).getCheckedObjects(
           this.history.data
         );
         objects.forEach((o) => {
           (o as BaseObjectRect).drawRect(this.ctx);
+          o.select(true);
         });
-        this.selectedObjects = objects;
       }
+    }
+
+    // 只在拖动的时候显示，鼠标松开后消失
+    if ([ObjectType.eraser, ObjectType.select].includes(this.current.type)) {
+      this.render();
     }
 
     this.previous = this.current;
@@ -234,13 +213,13 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
       });
     // 点击单个实例
     if (target) {
+      this.selectAll(false);
+      (target as BaseObjectRect).select(true);
       this.render();
-      (target as BaseObjectRect).drawRect(this.ctx);
-      this.selectedObjects = [target];
     } else {
       // 点击空白处取消框选
+      this.selectAll(false);
       this.render();
-      this.selectedObjects = [];
     }
   };
 
@@ -383,33 +362,52 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     // 切换到非框选模式清空选择框
     if (type !== ObjectType.select && this.selectedObjects.length) {
       this.render();
-      this.selectedObjects = [];
+      this.selectAll(false);
     }
   };
 
-  private drawRect = () => {
+  // 取消全选
+  private selectAll = (selected: boolean) => {
     this.selectedObjects.forEach((o) => {
-      if (this.drag.status === DragType.rotate && o.id === this.drag.targetId) {
-        return;
-      }
-      (o as BaseObjectRect).drawRect(this.ctx);
+      o.select(selected);
     });
   };
 
   // 渲染
-  private render = (options?: { notClear: boolean }) => {
+  private render = (options?: Partial<{ notClear: boolean }>) => {
     if (!options?.notClear) {
       this.clear();
     }
+    let flag = false;
     this.history.data.forEach((object) => {
-      if (
-        this.drag.status === DragType.rotate &&
-        object.id === this.drag.targetId
-      ) {
-        return;
+      if (object.drag.matrix) {
+        flag && this.ctx.resetTransform();
+        this.ctx.setTransform(object.drag.matrix);
+        // 添加偏移，弥补旋转中心变化到几何中心的偏移
+        object.drag.offsetPositions &&
+          object.setPosition(object.drag.offsetPositions);
+        flag = true;
+        object.render(this.ctx, { clearCanvas: this.clear });
+        object.selected && object.drawRect(this.ctx);
+        // 复原偏移
+        object.drag.originData &&
+          object.setPosition(object.drag.originData.positions);
+      } else if (flag) {
+        // 复原变换矩阵
+        this.ctx.resetTransform();
+        flag = false;
+        object.render(this.ctx, { clearCanvas: this.clear });
+        object.selected && object.drawRect(this.ctx);
+      } else {
+        object.render(this.ctx, { clearCanvas: this.clear });
+        object.selected && object.drawRect(this.ctx);
       }
-      object.render(this.ctx, { clearCanvas: this.clear });
     });
+
+    if (flag) {
+      // 复原变换矩阵
+      this.ctx.resetTransform();
+    }
   };
 
   // 设置样式
@@ -431,6 +429,11 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     this.canvas.removeEventListener('mouseup', this.onMouseUp);
     this.offAll(EventType.historyAdd);
   };
+
+  // 所选中的实例
+  get selectedObjects() {
+    return this.history.data.filter((o) => o.selected);
+  }
 }
 
 export default Sketchpad;
