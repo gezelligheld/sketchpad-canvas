@@ -102,18 +102,18 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
 
       switch (this.drag.status) {
         case DragType.inner:
+          this.clear();
           this.selectedObjects.forEach((o) => {
-            const positions = o.drag.move(x, y, o.positions);
-            positions && o.setPosition(positions);
+            o.drag.move(this.ctx, x, y, o.positions);
           });
-          this.render();
+          this.render({ notClear: true });
           break;
         case DragType.rotate: {
           const target = this.selectedObjects.find(
             (t) => t.id === this.drag.targetId
-          ) as BaseObjectRect<any>;
+          );
           this.clear();
-          target.drag.rotate(this.ctx, x, y, target.positions);
+          target?.drag.rotate(this.ctx, x, y, target.positions);
           this.render({ notClear: true });
           break;
         }
@@ -152,9 +152,6 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     // 拖拽的过程没有生成新的实例，这里赋值给上一个实例
     if (this.drag.isDraging) {
       this.current = this.previous;
-      this.selectedObjects.forEach((o) => {
-        o.drag.clearCache();
-      });
     }
     if (!this.current) {
       return;
@@ -229,14 +226,21 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
       return;
     }
     // 后选中的层级更高，先处理
-    // todo 旋转后相对位置可能会变，需要提前记录
     const temp = this.selectedObjects.reverse();
     for (let i = 0; i < temp.length; i++) {
-      const { positions, rect, id } = temp[i];
+      const { positions, rect, id, drag } = temp[i];
       const left = Math.min(...positions.map(({ x }) => x));
       const right = Math.max(...positions.map(({ x }) => x));
       const bottom = Math.max(...positions.map(({ y }) => y));
       const top = Math.min(...positions.map(({ y }) => y));
+      // 如果是存在变换矩阵的实例，需要将鼠标位置叉乘变换矩阵的逆转置矩阵得到变换前对应的的鼠标位置
+      // 求变换前对应的的鼠标位置矩阵a，已知变换矩阵b和现在的鼠标位置矩阵c，推导如下
+      // a * b = c
+      //   => a * b * E = a * b * (b ^ -1) ^ T * (b ^ T) ^ -1 = a * (b ^ T) ^ -1 = c
+      //   => a = c * (b ^ -1) ^ T
+      if (drag.matrix) {
+        // todo
+      }
       // 左上
       if (isInCircle(x, y, left, top, rect.pointRadius)) {
         this.drag.setStatus(DragType.leftTop, id);
@@ -374,6 +378,7 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
   };
 
   // 渲染
+  // 渲染管线：改变变换矩阵 -> 渲染当前实例和选中框 -> 复原变换矩阵 -> 渲染其他实例和选中框
   private render = (options?: Partial<{ notClear: boolean }>) => {
     if (!options?.notClear) {
       this.clear();
@@ -383,15 +388,9 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
       if (object.drag.matrix) {
         flag && this.ctx.resetTransform();
         this.ctx.setTransform(object.drag.matrix);
-        // 添加偏移，弥补旋转中心变化到几何中心的偏移
-        object.drag.offsetPositions &&
-          object.setPosition(object.drag.offsetPositions);
         flag = true;
         object.render(this.ctx, { clearCanvas: this.clear });
         object.selected && object.drawRect(this.ctx);
-        // 复原偏移
-        object.drag.originData &&
-          object.setPosition(object.drag.originData.positions);
       } else if (flag) {
         // 复原变换矩阵
         this.ctx.resetTransform();

@@ -12,21 +12,33 @@ class ObjectDrag {
     positions: Position[];
   } | null = null;
 
-  private currentPoint: Position | null = null;
-
-  private previousPoint: Position | null = null;
-
   // 当前变换矩阵
   matrix: DOMMatrix | null = null;
 
   // 移动
-  move = (x: number, y: number, positions: Position[]): Position[] => {
-    this.previousPoint = this.currentPoint || { x, y };
-    this.currentPoint = { x, y };
-    return positions.map((p) => ({
-      x: p.x + (this.currentPoint!.x - this.previousPoint!.x),
-      y: p.y + (this.currentPoint!.y - this.previousPoint!.y),
-    }));
+  move = (
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    positions: Position[]
+  ) => {
+    if (!this.originData) {
+      const left = Math.min(...positions.map(({ x }) => x));
+      const right = Math.max(...positions.map(({ x }) => x));
+      const top = Math.min(...positions.map(({ y }) => y));
+      const bottom = Math.max(...positions.map(({ y }) => y));
+      this.originData = {
+        x,
+        y,
+        left,
+        top,
+        right,
+        bottom,
+        positions: positions.map((p) => ({ ...p })),
+      };
+    }
+    ctx.translate(x - this.originData.x, y - this.originData.y);
+    this.matrix = ctx.getTransform();
   };
 
   // 缩放
@@ -250,12 +262,6 @@ class ObjectDrag {
           y: scaleY,
         };
     }
-  };
-
-  clearCache = () => {
-    // this.originData = null;
-    this.previousPoint = null;
-    this.currentPoint = null;
   };
 
   // 旋转
