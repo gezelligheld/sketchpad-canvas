@@ -118,17 +118,18 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
           break;
         }
         default: {
+          this.clear();
           const target = this.selectedObjects.find(
             (t) => t.id === this.drag.targetId
           );
-          const positions = target?.drag.resize(
+          target?.drag.resize(
+            this.ctx,
             x,
             y,
             target.positions,
             this.drag.status
           );
-          positions && target?.setPosition(positions);
-          this.render();
+          this.render({ notClear: true });
           break;
         }
       }
@@ -233,11 +234,7 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
       const right = Math.max(...positions.map(({ x }) => x));
       const bottom = Math.max(...positions.map(({ y }) => y));
       const top = Math.min(...positions.map(({ y }) => y));
-      // 如果是存在变换矩阵的实例，需要将鼠标位置叉乘变换矩阵的逆转置矩阵得到变换前对应的的鼠标位置
-      // 求变换前对应的的鼠标位置矩阵a，已知变换矩阵b和现在的鼠标位置矩阵c，推导如下
-      // a * b = c
-      //   => a * b * E = a * b * (b ^ -1) ^ T * (b ^ T) ^ -1 = a * (b ^ T) ^ -1 = c
-      //   => a = c * (b ^ -1) ^ T
+      // 如果是存在变换矩阵的实例，需要计算出变换前对应的的鼠标位置
       if (drag.matrix) {
         // todo
       }
@@ -389,8 +386,35 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
         flag && this.ctx.resetTransform();
         this.ctx.setTransform(object.drag.matrix);
         flag = true;
+        // e 水平移动
+        // f 垂直移动
+        const { e, f } = object.drag.matrix;
+        // 缩放和旋转时存在平移需要弥补偏移
+        if (
+          ![DragType.init, DragType.inner].includes(this.drag.status) &&
+          (e || f)
+        ) {
+          object.setPosition(
+            object.positions.map((p) => ({
+              x: e ? p.x - e : p.x,
+              y: f ? p.y - f : f,
+            }))
+          );
+        }
         object.render(this.ctx, { clearCanvas: this.clear });
         object.selected && object.drawRect(this.ctx);
+        // 渲染后复原偏移
+        if (
+          ![DragType.init, DragType.inner].includes(this.drag.status) &&
+          (e || f)
+        ) {
+          object.setPosition(
+            object.positions.map((p) => ({
+              x: e ? p.x + e : p.x,
+              y: f ? p.y + f : f,
+            }))
+          );
+        }
       } else if (flag) {
         // 复原变换矩阵
         this.ctx.resetTransform();
