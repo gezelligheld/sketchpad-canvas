@@ -15,6 +15,9 @@ class ObjectDrag {
   // 当前变换矩阵
   matrix: DOMMatrix | null = null;
 
+  // 移动造成的偏移量
+  offset = { x: 0, y: 0 };
+
   // 移动
   move = (
     ctx: CanvasRenderingContext2D,
@@ -37,8 +40,12 @@ class ObjectDrag {
         positions: positions.map((p) => ({ ...p })),
       };
     }
-    ctx.translate(x - this.originData.x, y - this.originData.y);
+    const offsetX = x - this.originData.x;
+    const offsetY = y - this.originData.y;
+    ctx.translate(offsetX, offsetY);
     this.matrix = ctx.getTransform();
+    this.offset.x = offsetX;
+    this.offset.y = offsetY;
   };
 
   // 缩放
@@ -211,6 +218,17 @@ class ObjectDrag {
     ctx.rotate(offsetRadian);
     this.matrix = ctx.getTransform();
   };
+
+  // 由坐标原点变化造成的偏移，平移造成的偏移不需要弥补，直接扣除
+  get offsetByOriginChange() {
+    if (!this.matrix) {
+      return { x: 0, y: 0 };
+    }
+    return {
+      x: this.matrix.e - this.offset.x,
+      y: this.matrix.f - this.offset.y,
+    };
+  }
 }
 
 export default ObjectDrag;

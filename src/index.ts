@@ -192,16 +192,25 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     if (this.type !== ObjectType.select || this.drag.isDraging) {
       return;
     }
-    const { x, y } = getPosition(this.canvas, e);
+    let { x, y } = getPosition(this.canvas, e);
     const target = this.history.data
       .filter(({ type }) => type !== ObjectType.eraser)
-      // 后画的层级更高，先选中
-      .reverse()
-      .find(({ positions }) => {
+      .findLast(({ positions, drag }) => {
         const left = Math.min(...positions.map(({ x }) => x));
         const right = Math.max(...positions.map(({ x }) => x));
         const top = Math.max(...positions.map(({ y }) => y));
         const bottom = Math.min(...positions.map(({ y }) => y));
+        if (drag.matrix) {
+          // a 水平缩放
+          // d 垂直缩放
+          // c 水平倾斜
+          // b 垂直倾斜
+          // e 水平移动
+          // f 垂直移动
+          const { a, b, c, d } = drag.matrix;
+          x = (x - drag.offsetByOriginChange.x) / a;
+          y = (y - drag.offsetByOriginChange.y) / d;
+        }
         return (
           x < Math.max(left, right) &&
           x > Math.min(left, right) &&
@@ -227,16 +236,23 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
       return;
     }
     // 后选中的层级更高，先处理
-    const temp = this.selectedObjects.reverse();
-    for (let i = 0; i < temp.length; i++) {
-      const { positions, rect, id, drag } = temp[i];
+    for (let i = this.selectedObjects.length - 1; i > 0; i--) {
+      const { positions, rect, id, drag } = this.selectedObjects[i];
       const left = Math.min(...positions.map(({ x }) => x));
       const right = Math.max(...positions.map(({ x }) => x));
       const bottom = Math.max(...positions.map(({ y }) => y));
       const top = Math.min(...positions.map(({ y }) => y));
       // 如果是存在变换矩阵的实例，需要计算出变换前对应的的鼠标位置
       if (drag.matrix) {
-        // todo
+        // a 水平缩放
+        // d 垂直缩放
+        // c 水平倾斜
+        // b 垂直倾斜
+        // e 水平移动
+        // f 垂直移动
+        const { a, b, c, d } = drag.matrix;
+        x = (x - drag.offsetByOriginChange.x) / a;
+        y = (y - drag.offsetByOriginChange.y) / d;
       }
       // 左上
       if (isInCircle(x, y, left, top, rect.pointRadius)) {
@@ -386,32 +402,24 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
         flag && this.ctx.resetTransform();
         this.ctx.setTransform(object.drag.matrix);
         flag = true;
-        // e 水平移动
-        // f 垂直移动
-        const { e, f } = object.drag.matrix;
-        // 缩放和旋转时存在平移需要弥补偏移
-        if (
-          ![DragType.init, DragType.inner].includes(this.drag.status) &&
-          (e || f)
-        ) {
+        const { x, y } = object.drag.offsetByOriginChange;
+        // 缩放和旋转时产生的平移需要弥补偏移
+        if (x || y) {
           object.setPosition(
             object.positions.map((p) => ({
-              x: e ? p.x - e : p.x,
-              y: f ? p.y - f : f,
+              x: x ? p.x - x : p.x,
+              y: y ? p.y - y : p.y,
             }))
           );
         }
         object.render(this.ctx, { clearCanvas: this.clear });
         object.selected && object.drawRect(this.ctx);
         // 渲染后复原偏移
-        if (
-          ![DragType.init, DragType.inner].includes(this.drag.status) &&
-          (e || f)
-        ) {
+        if (x || y) {
           object.setPosition(
             object.positions.map((p) => ({
-              x: e ? p.x + e : p.x,
-              y: f ? p.y + f : f,
+              x: x ? p.x + x : p.x,
+              y: y ? p.y + y : p.y,
             }))
           );
         }
