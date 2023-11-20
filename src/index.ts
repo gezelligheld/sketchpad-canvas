@@ -171,7 +171,6 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
           this.history.data
         );
         objects.forEach((o) => {
-          (o as BaseObjectRect).drawRect(this.ctx);
           o.select(true);
         });
       }
@@ -192,7 +191,7 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     if (this.type !== ObjectType.select || this.drag.isDraging) {
       return;
     }
-    let { x, y } = getPosition(this.canvas, e);
+    const { x: originX, y: originY } = getPosition(this.canvas, e);
     const target = this.history.data
       .filter(({ type }) => type !== ObjectType.eraser)
       .find(({ positions, drag }) => {
@@ -200,6 +199,8 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
         let right = Math.max(...positions.map(({ x }) => x));
         let top = Math.max(...positions.map(({ y }) => y));
         let bottom = Math.min(...positions.map(({ y }) => y));
+        let x = originX;
+        let y = originY;
         if (drag.matrix) {
           // a 水平缩放
           // d 垂直缩放
@@ -208,12 +209,8 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
           // e 水平移动
           // f 垂直移动
           const { a, b, c, d, e, f } = drag.matrix;
-          x = (x - e) / a;
-          y = (y - f) / d;
-          left = (left - e) / a;
-          right = (right - e) / a;
-          top = (top - f) / d;
-          bottom = (bottom - f) / d;
+          x = (x - e / 2) / a;
+          y = (y - f / 2) / d;
         }
         return (
           x < Math.max(left, right) &&
@@ -256,12 +253,14 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
         // e 水平移动
         // f 垂直移动
         const { a, b, c, d, e, f } = drag.matrix;
-        x = (x - e) / a;
-        y = (y - f) / d;
-        left = (left - e) / a;
-        right = (right - e) / a;
-        top = (top - f) / d;
-        bottom = (bottom - f) / d;
+        x = (x - e / 2) / a;
+        y = (y - f / 2) / d;
+        console.log(
+          mouseX - (drag.originData?.x || 0),
+          mouseY - (drag.originData?.y || 0),
+          e,
+          f
+        );
       }
       // 左上
       if (isInCircle(x, y, left, top, rect.pointRadius)) {
@@ -408,6 +407,7 @@ class Sketchpad extends Event<EventType> implements SketchpadData {
     let flag = false;
     this.history.data.forEach((object) => {
       if (object.drag.matrix) {
+        object.render(this.ctx, { clearCanvas: this.clear });
         flag && this.ctx.resetTransform();
         this.ctx.setTransform(object.drag.matrix);
         flag = true;
